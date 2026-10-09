@@ -1,0 +1,61 @@
+# Live print-mode check: real Pi 0.87.1, default model openrouter/moonshotai/kimi-k2.6
+# 2026-10-09T02:33:45Z
+# Print mode has no UI (ctx.hasUI false), so ask_user must return unavailable without opening a dialog.
+# --session-dir points at a scratch dir (instead of --no-session) only so the ask_user tool result can be
+# extracted from the session log below; scripts/cap-max-tokens.ts caps max_tokens (see live-rpc-check.txt).
+# stdin is /dev/null: an earlier try with an open stdin pipe hung before any request (Pi waits for piped stdin).
+
+$ pi -p --session-dir <scratch> -ne -ns -np -nc --tools ask_user -e ./src/index.ts -e ./scripts/cap-max-tokens.ts "Add a reminder to my Pi setup that pings me after 30 minutes of work. Don't write any files yet. First settle any design decision that would change what I see or cause rework later (use the ask_user tool if you need to), then reply with a 3-bullet implementation plan that reflects my answers." </dev/null
+
+=== stdout (final assistant text) ===
+ The interactive prompt isn’t available in this session, so the design decision is still open:
+
+**How should the 30-minute reminder behave and where should it appear?**
+
+- **Recurring OS notifications** — Native system banner/audio every 30 min of continuous work; highly visible but requires OS permissions.
+- **Single in-app reminder only** — One quiet status-bar highlight or chat message after the first 30 min; subtle but easy to miss.
+- **Recurring in-app reminder + optional sound** — Repeated TUI status-line nudge every 30 min, with a subtle beep; stays inside Pi without OS pop-ups.
+
+Which option do you prefer? Once you pick, I’ll reply with the 3-bullet implementation plan shaped around your choice.
+exit code: 0
+
+=== stderr ===
+
+=== ask_user call and tool result, extracted from the run's session log ===
+tool call: {
+  "name": "ask_user",
+  "arguments": {
+    "options": [
+      {
+        "label": "Recurring OS notifications",
+        "tradeoff": "Get a native system banner/audio every 30 min of continuous work; easy to notice but requires OS notification permissions and may feel intrusive."
+      },
+      {
+        "label": "Single in-app reminder only",
+        "tradeoff": "One quiet status-bar highlight or chat message after the first 30 min; less intrusive but easy to miss if you’re not watching the terminal."
+      },
+      {
+        "label": "Recurring in-app reminder + optional sound",
+        "tradeoff": "A repeated TUI status-line alert with a subtle beep every 30 min; stays inside Pi but gives persistent nudges without OS pop-ups."
+      }
+    ],
+    "question": "How should the 30-minute reminder behave and where should it appear?",
+    "reason": "This decides whether the reminder is a one-time or repeating event, and whether it uses OS notifications or stays inside Pi’s TUI/chat — which changes both the user experience and the implementation approach (OS APIs vs Pi-internal hooks).",
+    "recommendation": "Recurring in-app reminder + optional sound"
+  }
+}
+tool result: {
+  "toolName": "ask_user",
+  "isError": false,
+  "content": [
+    {
+      "type": "text",
+      "text": "ask_user: unavailable\nNo interactive UI is available in this mode, so the user could not be asked.\nDo not assume an answer. Tell the user this decision is still open: \"How should the 30-minute reminder behave and where should it appear?\". Continue only with work that does not depend on it."
+    }
+  ],
+  "details": {
+    "status": "unavailable",
+    "question": "How should the 30-minute reminder behave and where should it appear?"
+  }
+}
+ask_user calls in session: 1
