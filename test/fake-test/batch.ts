@@ -1,11 +1,12 @@
 // Batch report: runs every ask_user scenario in the table below through the
 // real registered tool (fake pi + fake dialogs from ./helpers.ts; no Pi process,
-// no model) and writes test/batch-test/results.json.
+// no model) and writes test/fake-test/batch-test/results.json.
 //
 // Run: npm run test:batch   (exits 1 if any scenario fails)
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { isDeepStrictEqual } from "node:util";
+import { createAskUserTool } from "../../src/index.ts";
 import {
 	QUESTION,
 	REASON,
@@ -25,8 +26,11 @@ import {
 // Scenario types
 // ---------------------------------------------------------------------------
 
-type Category = "answered" | "cancelled" | "unavailable" | "invalid" | "unexpected" | "display";
-type Method = "select" | "input";
+type Category = "answered" | "cancelled" | "unavailable" | "invalid" | "unexpected" | "display" | "repeat" | "scope";
+/** "scope" is the rule 16 follow-up select after a new answer. */
+type Method = "select" | "input" | "scope";
+/** How the simulated human answers the rule 16 follow-up (default "once": Enter on "Just this time"). */
+type FollowUp = "once" | "similar" | "esc" | "unexpected" | "abort";
 
 /** What the simulated human (or client) does. Choice numbers are the 1-based numbers shown in the menu. */
 type UserAction =
@@ -53,13 +57,24 @@ interface Expected {
 	select?: { title: string; choices: string[] };
 	/** Exact input dialog arguments, when the scenario checks them. */
 	input?: { title: string; placeholder: string };
+	/** Exact rule 16 follow-up dialog arguments. */
+	scope?: { title: string; choices: string[] };
 }
 
 interface Scenario {
 	name: string;
 	category: Category;
 	input: unknown;
+	/**
+	 * Repeats: a first ask_user call made through the same tool before this one, either as a
+	 * sibling in the same assistant message or in an earlier turn.
+	 */
+	history?: {
+		prior: { input: unknown; user: UserAction; followUp?: FollowUp; save: boolean; sameMessage: boolean };
+	};
 	user: UserAction;
+	/** The rule 16 follow-up, when the scenario reaches it (default "once"). */
+	followUp?: FollowUp;
 	expected: Expected;
 }
 
@@ -69,22 +84,27 @@ interface Scenario {
 
 const CUSTOM = "Write my own answer";
 
+const SCOPE_CHOICES = ["1. Just this time", "2. Also for similar questions this session"];
+
 function answered(
 	answer: string,
 	source: "option" | "custom",
 	rec?: { recommendation: string; followed: boolean },
 	question = QUESTION,
+	scope: "once" | "similar" = "once",
 ): Expected {
 	const details: Record<string, unknown> = { status: "answered", question, answer, source };
 	if (rec) {
 		details.recommendation = rec.recommendation;
 		details.followedRecommendation = rec.followed;
 	}
+	details.scope = scope;
 	return {
 		status: "answered",
 		details,
 		firstLine: "ask_user: answered",
-		dialogs: source === "custom" ? ["select", "input"] : ["select"],
+		dialogs: source === "custom" ? ["select", "input", "scope"] : ["select", "scope"],
+		scope: { title: `Apply "${answer}" to similar questions this session?`, choices: SCOPE_CHOICES },
 	};
 }
 
@@ -419,6 +439,196 @@ const scenarios: Scenario[] = [
 		expected: throws('unexpected dialog response "Postgres"', ["select"]),
 	},
 
+	// repeat: across turns the dialog always opens; identical siblings in one response share it
+	{
+		name: "an identical call in a later turn opens the dialog again",
+		category: "repeat",
+		input: base(),
+		history: { prior: { input: base(), user: { kind: "pick", choice: 1 }, save: true, sameMessage: false } },
+		user: { kind: "pick", choice: 2 },
+		expected: answered("Postgres", "option", { ...REC_POSTGRES, followed: true }),
+	},
+	{
+		name: "an identical call after a dismissal in a later turn opens the dialog again",
+		category: "repeat",
+		input: base(),
+		history: { prior: { input: base(), user: { kind: "escMenu" }, save: true, sameMessage: false } },
+		user: { kind: "pick", choice: 1 },
+		expected: answered("SQLite", "option", { ...REC_POSTGRES, followed: false }),
+	},
+	{
+		name: 'same question text for a different decision in a later turn asks (R-B: "Should I go ahead?")',
+		category: "repeat",
+		input: { question: "Should I go ahead?", reason: "Overwrites your existing config.json with defaults.", options: [option("Yes", "Clean config"), option("No", "Keep your edits")] },
+		history: {
+			prior: {
+				input: { question: "Should I go ahead?", reason: "Deletes logs older than 30 days.", options: [option("Yes", "Frees disk"), option("No", "Keeps logs")] },
+				user: { kind: "pick", choice: 1 },
+				save: true,
+				sameMessage: false,
+			},
+		},
+		user: { kind: "pick", choice: 2 },
+		expected: {
+			status: "answered",
+			details: { status: "answered", question: "Should I go ahead?", answer: "No", source: "option", scope: "once" },
+			firstLine: "ask_user: answered",
+			dialogs: ["select", "scope"],
+			scope: { title: 'Apply "No" to similar questions this session?', choices: SCOPE_CHOICES },
+		},
+	},
+	{
+		name: "identical siblings in one response: one dialog, the second gets the first's answer (not saved yet)",
+		category: "repeat",
+		input: base(),
+		history: { prior: { input: base(), user: { kind: "pick", choice: 3 }, save: false, sameMessage: true } },
+		user: { kind: "pick", choice: 1 },
+		expected: {
+			status: "answered",
+			details: { status: "answered", question: QUESTION, answer: "In-memory", source: "option", recommendation: "Postgres", followedRecommendation: false, scope: "once", repeated: true },
+			firstLine: "ask_user: answered",
+			dialogs: [],
+		},
+	},
+	{
+		name: "identical siblings with case/whitespace differences: still one dialog (first result saved, as in Pi)",
+		category: "repeat",
+		input: base({ question: "  which DATABASE\tshould  the cache use  " }),
+		history: { prior: { input: base(), user: { kind: "type", text: "Use Redis" }, save: true, sameMessage: true } },
+		user: { kind: "pick", choice: 1 },
+		expected: {
+			status: "answered",
+			details: { status: "answered", question: "which DATABASE\tshould  the cache use", answer: "Use Redis", source: "custom", recommendation: "Postgres", followedRecommendation: false, scope: "once", repeated: true },
+			firstLine: "ask_user: answered",
+			dialogs: [],
+		},
+	},
+	{
+		name: "identical sibling after a dismissal: cancelled (dismissed), repeated, no dialog",
+		category: "repeat",
+		input: base(),
+		history: { prior: { input: base(), user: { kind: "escMenu" }, save: true, sameMessage: true } },
+		user: { kind: "pick", choice: 1 },
+		expected: { ...cancelled("dismissed", []), details: { status: "cancelled", question: QUESTION, cancelReason: "dismissed", repeated: true } },
+	},
+	{
+		name: "identical sibling with only a different recommendation and label order/case: still one dialog",
+		category: "repeat",
+		input: withoutRecommendation({ options: [option("in-memory", "Fast"), option("  POSTGRES ", "Server"), option("sqlite", "File")] }),
+		history: { prior: { input: base(), user: { kind: "pick", choice: 1 }, save: true, sameMessage: true } },
+		user: { kind: "pick", choice: 2 },
+		expected: {
+			status: "answered",
+			details: { status: "answered", question: QUESTION, answer: "SQLite", source: "option", recommendation: "Postgres", followedRecommendation: false, scope: "once", repeated: true },
+			firstLine: "ask_user: answered",
+			dialogs: [],
+		},
+	},
+	{
+		name: "different siblings in one response both ask: another question",
+		category: "repeat",
+		input: base({ question: "Which database should the queue use?" }),
+		history: { prior: { input: base(), user: { kind: "pick", choice: 1 }, save: true, sameMessage: true } },
+		user: { kind: "pick", choice: 3 },
+		expected: answered("In-memory", "option", { ...REC_POSTGRES, followed: false }, "Which database should the queue use?"),
+	},
+	{
+		name: "different siblings in one response both ask: same question, another reason",
+		category: "repeat",
+		input: base({ reason: "Only affects local tests." }),
+		history: { prior: { input: base(), user: { kind: "pick", choice: 1 }, save: false, sameMessage: true } },
+		user: { kind: "pick", choice: 2 },
+		expected: {
+			...answered("Postgres", "option", { ...REC_POSTGRES, followed: true }),
+			select: {
+				title: [QUESTION, "", "Why it matters: Only affects local tests.", "", ...BASE_TITLE.split("\n").slice(4)].join("\n"),
+				choices: ["1. SQLite", "2. [Recommended] Postgres", "3. In-memory", "4. Write my own answer"],
+			},
+		},
+	},
+	{
+		name: "different siblings in one response both ask: same question and reason, other options",
+		category: "repeat",
+		input: withoutRecommendation({ options: [option("MySQL"), option("MongoDB")] }),
+		history: { prior: { input: base(), user: { kind: "pick", choice: 2 }, save: true, sameMessage: true } },
+		user: { kind: "pick", choice: 1 },
+		expected: answered("MySQL", "option"),
+	},
+	{
+		name: "a sibling aborted before it asked doesn't count: the identical call asks",
+		category: "repeat",
+		input: base(),
+		history: { prior: { input: base(), user: { kind: "abortBefore" }, save: true, sameMessage: true } },
+		user: { kind: "pick", choice: 2 },
+		expected: answered("Postgres", "option", { ...REC_POSTGRES, followed: true }),
+	},
+
+	// scope (rule 16): the follow-up after a new answer
+	{
+		name: 'option, then "Also for similar questions this session" → scope similar',
+		category: "scope",
+		input: base(),
+		user: { kind: "pick", choice: 1 },
+		followUp: "similar",
+		expected: answered("SQLite", "option", { ...REC_POSTGRES, followed: false }, QUESTION, "similar"),
+	},
+	{
+		name: 'custom answer, then "Also for similar" → scope similar, answer exact',
+		category: "scope",
+		input: withoutRecommendation(),
+		user: { kind: "type", text: "  Use Redis  " },
+		followUp: "similar",
+		expected: answered("  Use Redis  ", "custom", undefined, QUESTION, "similar"),
+	},
+	{
+		name: "a long custom answer is shortened to 60 characters + … in the follow-up title only",
+		category: "scope",
+		input: withoutRecommendation(),
+		user: { kind: "type", text: "Keep reminders in a JSON file under ~/.pi and never sync them to the cloud, ever" },
+		expected: {
+			...answered("Keep reminders in a JSON file under ~/.pi and never sync them to the cloud, ever", "custom"),
+			// 60 characters, then …
+			scope: { title: 'Apply "Keep reminders in a JSON file under ~/.pi and never sync the…" to similar questions this session?', choices: SCOPE_CHOICES },
+		},
+	},
+	{
+		name: "Esc on the follow-up → scope once; the answer stands",
+		category: "scope",
+		input: base(),
+		user: { kind: "pick", choice: 2 },
+		followUp: "esc",
+		expected: answered("Postgres", "option", { ...REC_POSTGRES, followed: true }),
+	},
+	{
+		name: "an unexpected value on the follow-up → scope once; the answer stands",
+		category: "scope",
+		input: base(),
+		user: { kind: "pick", choice: 3 },
+		followUp: "unexpected",
+		expected: answered("In-memory", "option", { ...REC_POSTGRES, followed: false }),
+	},
+	{
+		name: "an abort while the follow-up is open → scope once; the answer stands (not cancelled)",
+		category: "scope",
+		input: base(),
+		user: { kind: "pick", choice: 1 },
+		followUp: "abort",
+		expected: answered("SQLite", "option", { ...REC_POSTGRES, followed: false }),
+	},
+	{
+		name: 'an identical sibling of a "similar" answer carries scope similar, with no dialogs',
+		category: "scope",
+		input: base(),
+		history: { prior: { input: base(), user: { kind: "pick", choice: 1 }, followUp: "similar", save: true, sameMessage: true } },
+		user: { kind: "pick", choice: 2 },
+		expected: {
+			status: "answered",
+			details: { status: "answered", question: QUESTION, answer: "SQLite", source: "option", recommendation: "Postgres", followedRecommendation: false, scope: "similar", repeated: true },
+			firstLine: "ask_user: answered",
+			dialogs: [],
+		},
+	},
+
 	// display
 	{
 		name: "human-approved example: 2 options, option 2 recommended",
@@ -557,13 +767,28 @@ function describeAction(action: UserAction): string {
 	}
 }
 
-async function runScenario(scenario: Scenario) {
-	const controller = new AbortController();
+/** Fake dialog behavior for a simulated user action. */
+const FOLLOW_UP: Record<FollowUp, (controller: AbortController) => Responder> = {
+	once: () => (call) => call.choices![0],
+	similar: () => (call) => call.choices![1],
+	esc: () => reply(undefined),
+	unexpected: () => reply("2. Also for similar"),
+	abort: (controller) => abortWhileOpen(controller),
+};
+const FOLLOW_UP_TEXT: Record<FollowUp, string> = {
+	once: 'Enter on "1. Just this time"',
+	similar: 'picks "2. Also for similar questions this session"',
+	esc: "presses Esc",
+	unexpected: 'client returns "2. Also for similar" (not a choice)',
+	abort: "run is aborted while it is open",
+};
+
+function responders(action: UserAction, controller: AbortController, followUp: FollowUp = "once") {
+	const scope = FOLLOW_UP[followUp](controller);
 	let hasUI = true;
 	// By default a dialog that opens by mistake would answer, so a wrong "answered" can't hide.
 	let select: Responder = pick(0);
 	let input: Responder = reply("unexpected text");
-	const action = scenario.user;
 	switch (action.kind) {
 		case "pick":
 			select = pick(action.choice - 1);
@@ -598,20 +823,74 @@ async function runScenario(scenario: Scenario) {
 		case "none":
 			break;
 	}
+	return { hasUI, select, input, scope };
+}
 
-	const fake = session({ hasUI, select, input });
+type Entry = { type: "message"; id: string; parentId: string | null; message: Record<string, unknown> };
+
+/** A fake session branch like Pi's: an assistant message carries its ask_user tool calls; results follow. */
+function fakeBranch(prefix: string) {
+	const entries: Entry[] = [];
+	const add = (id: string, message: Record<string, unknown>) => {
+		entries.push({ type: "message", id: `${prefix}-${id}`, parentId: entries.at(-1)?.id ?? null, message });
+	};
+	add("user", { role: "user" });
+	return {
+		manager: { getBranch: () => [...entries] },
+		/** One assistant message with these tool calls. */
+		message(id: string, calls: [string, unknown][]) {
+			add(id, { role: "assistant", content: calls.map(([toolCallId, args]) => ({ type: "toolCall", id: toolCallId, name: "ask_user", arguments: args })) });
+		},
+		result(toolCallId: string, details: unknown) {
+			add(`result-${toolCallId}`, { role: "toolResult", toolName: "ask_user", toolCallId, isError: false, content: [], details });
+		},
+		userTurn() {
+			add("user-2", { role: "user" });
+		},
+	};
+}
+
+async function runScenario(scenario: Scenario, index: number) {
+	const controller = new AbortController();
+	const action = scenario.user;
+	const fake = session(responders(action, controller, scenario.followUp));
+
+	// History scenarios use a fresh tool instance and a fake session branch.
+	let execute = run;
+	if (scenario.history) {
+		const tool = createAskUserTool();
+		const branch = fakeBranch(`batch-${index}`);
+		const withBranch = (s: typeof fake) => ((s.ctx as unknown as { sessionManager: unknown }).sessionManager = branch.manager);
+		const { prior } = scenario.history;
+		// Like Pi: all tool calls of one response are in its assistant message before any of them runs.
+		branch.message("assistant-1", prior.sameMessage ? [["prior", prior.input], ["call", scenario.input]] : [["prior", prior.input]]);
+		const priorController = new AbortController();
+		const priorSession = session(responders(prior.user, priorController, prior.followUp));
+		withBranch(priorSession);
+		const priorResult = await tool.execute("prior", prior.input as never, priorController.signal, undefined, priorSession.ctx);
+		if (prior.save) branch.result("prior", priorResult.details);
+		if (!prior.sameMessage) {
+			branch.userTurn();
+			branch.message("assistant-2", [["call", scenario.input]]);
+		}
+		withBranch(fake);
+		execute = (params, s, signal) => tool.execute("call", params as never, signal, undefined, s.ctx);
+	}
+
 	let actual: Record<string, unknown>;
 	try {
-		const result = await run(scenario.input, fake, controller.signal);
+		const result = await execute(scenario.input, fake, controller.signal);
 		actual = { status: result.details.status, details: result.details, firstLine: contentText(result).split("\n")[0] };
 	} catch (error) {
 		actual = { error: error instanceof Error ? error.message : String(error) };
 	}
 
-	const dialogCalls = fake.calls.map((call) =>
-		call.method === "select"
-			? { method: call.method, title: call.title, choices: call.choices }
-			: { method: call.method, title: call.title, placeholder: call.placeholder },
+	const dialogCalls = fake.log.map((call) =>
+		call.kind === "scope"
+			? { method: "scope", title: call.title, choices: call.choices }
+			: call.method === "select"
+				? { method: call.method, title: call.title, choices: call.choices }
+				: { method: call.method, title: call.title, placeholder: call.placeholder },
 	);
 
 	const mismatches = compare(scenario.expected, actual, dialogCalls);
@@ -619,12 +898,24 @@ async function runScenario(scenario: Scenario) {
 		name: scenario.name,
 		category: scenario.category,
 		input: scenario.input,
-		userAction: describeAction(action),
+		...(scenario.history ? { history: describeHistory(scenario.history) } : {}),
+		userAction: describeAction(action) + (dialogCalls.some((c) => c.method === "scope") ? `; follow-up: ${FOLLOW_UP_TEXT[scenario.followUp ?? "once"]}` : ""),
 		dialogCalls,
 		expected: scenario.expected,
 		actual,
 		pass: mismatches.length === 0,
 		mismatches,
+	};
+}
+
+function describeHistory({ prior }: NonNullable<Scenario["history"]>) {
+	return {
+		priorCall: {
+			input: prior.input,
+			userAction: describeAction(prior.user) + (prior.followUp ? `; follow-up: ${FOLLOW_UP_TEXT[prior.followUp]}` : ""),
+			where: prior.sameMessage ? "a sibling in the same assistant message" : "an earlier turn",
+			saved: prior.save ? "its result was saved on the branch" : "its result is not saved yet",
+		},
 	};
 }
 
@@ -651,7 +942,7 @@ function compare(expected: Expected, actual: Record<string, unknown>, dialogCall
 			problems.push(`first content line: expected ${JSON.stringify(expected.firstLine)}, got ${JSON.stringify(actual.firstLine)}`);
 		}
 	}
-	for (const method of ["select", "input"] as const) {
+	for (const method of ["select", "input", "scope"] as const) {
 		const want = expected[method];
 		if (want === undefined) continue;
 		const call = dialogCalls.find((c) => c.method === method);
@@ -662,11 +953,11 @@ function compare(expected: Expected, actual: Record<string, unknown>, dialogCall
 }
 
 const results = [];
-for (const scenario of scenarios) results.push(await runScenario(scenario));
+for (const [index, scenario] of scenarios.entries()) results.push(await runScenario(scenario, index));
 
 const passed = results.filter((r) => r.pass).length;
 const piPackage = JSON.parse(
-	readFileSync(new URL("../node_modules/@earendil-works/pi-coding-agent/package.json", import.meta.url), "utf8"),
+	readFileSync(new URL("../../node_modules/@earendil-works/pi-coding-agent/package.json", import.meta.url), "utf8"),
 );
 const report = {
 	generatedAt: new Date().toISOString(),

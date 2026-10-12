@@ -1,5 +1,5 @@
 // Core of the ask_user tool: validate the call, show Pi's built-in dialogs,
-// and map the human's response to one of three results. See docs/CONTRACT.md.
+// and map the human's response to one of three results.
 
 /** Text of the final choice that lets the user type their own answer (shown numbered, after the options). */
 export const CUSTOM_ANSWER_LABEL = "Write my own answer";
@@ -8,6 +8,14 @@ export const CUSTOM_ANSWER_LABEL = "Write my own answer";
 export const RECOMMENDED_MARK = "[Recommended] ";
 
 const INPUT_PLACEHOLDER = "Type your answer";
+
+/** Rule 16: the follow-up after a new answer. "Just this time" is first, so Enter-Enter keeps the old flow. */
+export const SCOPE_ONCE = "1. Just this time";
+export const SCOPE_SIMILAR = "2. Also for similar questions this session";
+export const SCOPE_CHOICES = [SCOPE_ONCE, SCOPE_SIMILAR];
+const SCOPE_SHOWN_MAX = 60;
+
+export type Scope = "once" | "similar";
 
 export interface AskUserOption {
 	label: string;
@@ -31,9 +39,21 @@ export type AskUserDetails =
 			source: "option" | "custom";
 			recommendation?: string;
 			followedRecommendation?: boolean;
+			/** Rule 16: whether the user applied this answer to similar questions this session. */
+			scope: Scope;
+			/** Only when an identical sibling call in the same assistant message already got this answer. */
+			repeated?: true;
 	  }
-	| { status: "cancelled"; question: string; cancelReason: CancelReason }
+	| { status: "cancelled"; question: string; cancelReason: CancelReason; repeated?: true }
 	| { status: "unavailable"; question: string };
+
+/** The result of an earlier ask_user call in the same assistant message (a sibling call). */
+export interface SiblingResult {
+	toolCallId: string;
+	details: AskUserDetails;
+	/** callKey() of that sibling call. */
+	call: string;
+}
 
 export interface AskUserResult {
 	content: { type: "text"; text: string }[];
@@ -189,8 +209,8 @@ const NO_ANSWER_ADVICE = (question: string) =>
 	"Continue only with work that does not depend on it.";
 
 const CANCEL_TEXT: Record<CancelReason, string> = {
-	dismissed: "The user closed the question without answering.",
-	empty_answer: "The user submitted an empty custom answer.",
+	dismissed: "The user closed the question without answering. Don't ask again about this decision in this scenario.",
+	empty_answer: "The user submitted an empty custom answer. Don't ask again about this decision in this scenario.",
 	aborted: "The run was aborted before the user answered.",
 };
 
@@ -209,19 +229,25 @@ function cancelled(question: string, cancelReason: CancelReason): AskUserResult 
 function unavailable(question: string): AskUserResult {
 	return result({ status: "unavailable", question }, [
 		"ask_user: unavailable",
-		"No interactive UI is available in this mode, so the user could not be asked.",
+		"No interactive UI is available in this mode, so the user could not be asked. Do not call ask_user again in this run.",
 		NO_ANSWER_ADVICE(question),
 	]);
 }
 
-function answered(params: AskUserParams, answer: string, source: "option" | "custom"): AskUserResult {
+const SIMILAR_TEXT =
+	"The user asked to apply this choice to similar decisions for the rest of this session. For a later decision you judge similar, " +
+	"don't call ask_user: apply this preference and tell the user you did. If you're unsure whether a decision is similar, ask.";
+const scopeLine = (scope: Scope) => (scope === "similar" ? SIMILAR_TEXT : "This answer applies to this question only.");
+
+function answered(params: AskUserParams, answer: string, source: "option" | "custom", scope: Scope): AskUserResult {
 	const { question, recommendation } = params;
 	const lines = [`ask_user: answered`, `Question: ${JSON.stringify(question)}`];
 	if (source === "option") lines.push(`The user chose the option ${JSON.stringify(answer)}.`);
 	else lines.push(`The user typed a free-text answer instead of choosing an option: ${JSON.stringify(answer)}`);
 
 	if (recommendation === undefined) {
-		return result({ status: "answered", question, answer, source }, lines);
+		lines.push(scopeLine(scope));
+		return result({ status: "answered", question, answer, source, scope }, lines);
 	}
 	const followedRecommendation = source === "option" && answer === recommendation;
 	if (followedRecommendation) {
@@ -231,17 +257,130 @@ function answered(params: AskUserParams, answer: string, source: "option" | "cus
 	} else {
 		lines.push(`The user did not pick your recommended option (${JSON.stringify(recommendation)}). Use their answer as written.`);
 	}
-	return result({ status: "answered", question, answer, source, recommendation, followedRecommendation }, lines);
+	lines.push(scopeLine(scope));
+	return result({ status: "answered", question, answer, source, recommendation, followedRecommendation, scope }, lines);
+}
+
+/** The answer as shown in the follow-up title: an option label as is; a custom answer shortened to 60 characters. */
+export function scopeTitle(answer: string, source: "option" | "custom"): string {
+	const chars = [...answer]; // code points, so an emoji is never split
+	const shown = source === "custom" && chars.length > SCOPE_SHOWN_MAX ? `${chars.slice(0, SCOPE_SHOWN_MAX).join("")}…` : answer;
+	return `Apply "${shown}" to similar questions this session?`;
+}
+
+/** Rule 16 follow-up. Esc, an abort, an unexpected value, or a dialog error all mean "once": the answer stands. */
+async function askScope(ctx: AskUserContext, signal: AbortSignal | undefined, answer: string, source: "option" | "custom"): Promise<Scope> {
+	if (signal?.aborted) return "once";
+	try {
+		const picked = await ctx.ui.select(scopeTitle(answer, source), [...SCOPE_CHOICES], { signal });
+		return picked === SCOPE_SIMILAR && !signal?.aborted ? "similar" : "once";
+	} catch {
+		return "once";
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Identical sibling calls (one mechanical repeat check)
+// ---------------------------------------------------------------------------
+// Across turns, the model decides from the conversation whether an earlier
+// answer still applies: the same question in a different task may need a
+// different answer. Only identical calls fired together in ONE assistant
+// message are treated as the same moment: the later one gets the earlier one's
+// result without a second dialog.
+
+/** Question normalization: flatten line breaks, trim, lower-case, collapse whitespace, drop one trailing "?". */
+export function questionKey(question: string): string {
+	return flatten(question)
+		.trim()
+		.toLowerCase()
+		.replace(/\s+/g, " ")
+		.replace(/\s*\?$/, "");
+}
+
+/**
+ * Identity of a call: the question and the reason (normalized like questionKey)
+ * and the set of option labels (trimmed, case-insensitive). The recommendation
+ * and tradeoffs don't count. Works on raw tool-call arguments; returns undefined
+ * when they don't have that shape (then nothing can match).
+ */
+export function callKey(args: unknown): string | undefined {
+	if (typeof args !== "object" || args === null) return undefined;
+	const { question, reason, options } = args as Record<string, unknown>;
+	if (typeof question !== "string" || typeof reason !== "string" || !Array.isArray(options)) return undefined;
+	const labels: string[] = [];
+	for (const option of options) {
+		const label = (option as { label?: unknown } | null)?.label;
+		if (typeof label !== "string") return undefined;
+		labels.push(labelKey(label));
+	}
+	return JSON.stringify([questionKey(question), questionKey(reason), [...new Set(labels)].sort()]);
+}
+
+/** The latest identical sibling in which a human decided something (answered, dismissed, empty). */
+function findRepeat(params: AskUserParams, siblings: readonly SiblingResult[]): AskUserDetails | undefined {
+	const key = callKey(params);
+	for (let i = siblings.length - 1; i >= 0; i--) {
+		const { details, call } = siblings[i]!;
+		if (call !== key) continue;
+		if (details.status === "answered") return details;
+		if (details.status === "cancelled" && details.cancelReason !== "aborted") return details;
+		// aborted / unavailable: nobody decided anything; ask normally
+	}
+	return undefined;
+}
+
+function repeated(question: string, earlier: AskUserDetails): AskUserResult {
+	const already = "This is the same question as another ask_user call in your current response, so no second dialog was shown.";
+	if (earlier.status === "answered") {
+		const { answer, source, scope } = earlier;
+		// Same key order as a new answer, then `repeated`.
+		const details = {
+			status: "answered",
+			question,
+			answer,
+			source,
+			...(earlier.recommendation !== undefined
+				? { recommendation: earlier.recommendation, followedRecommendation: earlier.followedRecommendation }
+				: {}),
+			scope,
+			repeated: true,
+		} as AskUserDetails;
+		return result(details, [
+			"ask_user: answered",
+			`Question: ${JSON.stringify(question)}`,
+			`${already} The user answered it: ${JSON.stringify(answer)} (${source === "option" ? "chosen option" : "typed free text"}).`,
+			"Use that answer; don't ask again about this decision in this scenario.",
+			...(scope === "similar" ? [SIMILAR_TEXT] : []),
+		]);
+	}
+	const cancelReason = earlier.status === "cancelled" ? earlier.cancelReason : "dismissed";
+	return result({ status: "cancelled", question, cancelReason, repeated: true }, [
+		`ask_user: cancelled (${cancelReason})`,
+		`${already} The user chose not to answer it. Don't ask again about this decision in this scenario; treat it as open.`,
+		NO_ANSWER_ADVICE(question),
+	]);
 }
 
 // ---------------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------------
 
-export async function askUser(input: unknown, signal: AbortSignal | undefined, ctx: AskUserContext): Promise<AskUserResult> {
+/**
+ * Validate, then return early when aborted, when the same question was already
+ * decided by an identical sibling call in the same assistant message (`siblings`),
+ * or when there is no UI; otherwise show the dialogs.
+ */
+export async function askUser(
+	input: unknown,
+	signal: AbortSignal | undefined,
+	ctx: AskUserContext,
+	siblings: readonly SiblingResult[] = [],
+): Promise<AskUserResult> {
 	const params = validate(input);
 	const { question } = params;
 	if (signal?.aborted) return cancelled(question, "aborted");
+	const repeat = findRepeat(params, siblings);
+	if (repeat) return repeated(question, repeat);
 	if (!ctx.hasUI) return unavailable(question);
 
 	// No `timeout`: an auto-dismissed dialog must never look like a human decision.
@@ -252,7 +391,10 @@ export async function askUser(input: unknown, signal: AbortSignal | undefined, c
 
 	const index = choices.indexOf(picked);
 	if (index === -1) unexpected(picked);
-	if (index < params.options.length) return answered(params, params.options[index]!.label, "option");
+	if (index < params.options.length) {
+		const label = params.options[index]!.label;
+		return answered(params, label, "option", await askScope(ctx, signal, label, "option"));
+	}
 
 	if (signal?.aborted) return cancelled(question, "aborted");
 	const typed = await dialog(() => ctx.ui.input(question, INPUT_PLACEHOLDER, { signal }), signal);
@@ -260,5 +402,5 @@ export async function askUser(input: unknown, signal: AbortSignal | undefined, c
 	if (typed === undefined) return cancelled(question, "dismissed");
 	if (typeof typed !== "string") unexpected(typed);
 	if (typed.trim() === "") return cancelled(question, "empty_answer");
-	return answered(params, typed, "custom");
+	return answered(params, typed, "custom", await askScope(ctx, signal, typed, "custom"));
 }

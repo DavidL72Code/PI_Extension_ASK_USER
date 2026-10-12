@@ -1,0 +1,826 @@
+{
+  "generatedAt": "2026-10-12T02:50:41.264Z",
+  "mode": "spectrum",
+  "model": "openrouter/moonshotai/kimi-k2.6",
+  "note": "Live and non-deterministic. Each session is one Pi process (the preference stays in context); the folder is emptied after every prompt. In the \"similar\" session, S prompts pass with no question dialog and D prompts pass with one; the \"once\" session is a control. preferenceHonored needs the control's S prompts to ask at least once, else it is inconclusive. infoMentionsPreference is a keyword heuristic.",
+  "prompts": [
+    {
+      "id": "A",
+      "kind": "setup",
+      "text": "Add a reminder that pings me after 30 minutes of work."
+    },
+    {
+      "id": "S1",
+      "kind": "similar",
+      "text": "Add a timer that tells me when my coffee is ready in 4 minutes."
+    },
+    {
+      "id": "D1",
+      "kind": "different",
+      "text": "Write a script that cleans up old log files in ./logs."
+    },
+    {
+      "id": "S2",
+      "kind": "similar",
+      "text": "Make a script that alerts me when a long download finishes."
+    },
+    {
+      "id": "D2",
+      "kind": "different",
+      "text": "Make a script that backs up my Documents folder."
+    }
+  ],
+  "command": "pi --mode rpc --no-session -ne -ns -np -nc --tools ask_user,read,write,edit -e /Users/davidle/Documents/Ask_user_Pi_extension/src/index.ts -e /Users/davidle/Documents/Ask_user_Pi_extension/scripts/cap-max-tokens.ts -e /Users/davidle/Documents/Ask_user_Pi_extension/scripts/sandbox-guard.ts   (cwd: a fresh temp folder per session; all prompts in one process)",
+  "totals": {
+    "sessions": 2,
+    "preferenceHonored": false,
+    "scopeRespected": true,
+    "similarSessionSimilarAsked": [
+      false,
+      true
+    ],
+    "similarSessionDifferentAsked": [
+      true,
+      true
+    ],
+    "controlSimilarAsked": [
+      false,
+      null
+    ],
+    "controlDifferentAsked": [
+      null,
+      null
+    ],
+    "promptChecks": {
+      "passed": 3,
+      "failed": 1
+    },
+    "errors": 1,
+    "retries": 0,
+    "totalTokens": 193744
+  },
+  "stopReason": "stopped after a credit/auth error in session once",
+  "sessions": [
+    {
+      "kind": "similar",
+      "error": null,
+      "attempts": [
+        {
+          "error": null,
+          "promptsCompleted": 5
+        }
+      ],
+      "prompts": [
+        {
+          "id": "A",
+          "kind": "setup",
+          "text": "Add a reminder that pings me after 30 minutes of work.",
+          "ran": true,
+          "askUserCalls": [
+            {
+              "question": "How would you like the reminder delivered?",
+              "dialogOpened": true,
+              "status": "answered",
+              "scope": "similar",
+              "repeated": false,
+              "firstLine": "ask_user: answered",
+              "choices": [
+                "1. [Recommended] Desktop notification (via a small script)",
+                "2. Browser alert (via a webpage)",
+                "3. Sound or voice alert (via a script)",
+                "4. Write my own answer"
+              ],
+              "picked": "1. [Recommended] Desktop notification (via a small script)",
+              "followUpPicked": "2. Also for similar questions this session",
+              "answer": "Desktop notification (via a small script)"
+            }
+          ],
+          "questionDialogs": 1,
+          "dialogs": [
+            {
+              "kind": "question",
+              "title": "How would you like the reminder delivered?",
+              "options": [
+                "1. [Recommended] Desktop notification (via a small script)",
+                "2. Browser alert (via a webpage)",
+                "3. Sound or voice alert (via a script)",
+                "4. Write my own answer"
+              ],
+              "sent": "1. [Recommended] Desktop notification (via a small script)"
+            },
+            {
+              "kind": "follow-up",
+              "title": "Apply \"Desktop notification (via a small script)\" to similar questions this session?",
+              "options": [
+                "1. Just this time",
+                "2. Also for similar questions this session"
+              ],
+              "sent": "2. Also for similar questions this session"
+            }
+          ],
+          "toolCalls": [
+            {
+              "name": "ask_user",
+              "args": "{\"question\":\"How would you like the reminder delivered?\",\"reason\":\"The delivery mechanism (e.g., desktop notification, sound, email) is a core user-visible beh…",
+              "isError": false,
+              "result": "ask_user: answered"
+            },
+            {
+              "name": "read",
+              "path": "/private/var/folders/hw/cb72t3ln1c95cr7_swmvy0kw0000gn/T/ask-user-live-3yb77Q",
+              "args": "{\"path\":\"/private/var/folders/hw/cb72t3ln1c95cr7_swmvy0kw0000gn/T/ask-user-live-3yb77Q\",\"offset\":1,\"limit\":50}",
+              "isError": true,
+              "result": "EISDIR: illegal operation on a directory, read"
+            },
+            {
+              "name": "write",
+              "path": "work_reminder.py",
+              "args": "{\"path\":\"work_reminder.py\",\"content\":\"#!/usr/bin/env python3\\n\\\"\\\"\\\"Simple work reminder that sends a desktop notification after a set duration.\\\"\\\"\\\"\\n\\nimpor…",
+              "isError": false,
+              "result": "Successfully wrote to work_reminder.py"
+            }
+          ],
+          "filesInFolderAfter": [
+            "work_reminder.py"
+          ],
+          "newFiles": [
+            "work_reminder.py"
+          ],
+          "lastStopReason": "stop",
+          "finalReply": "Created `work_reminder.py`. It will wait 30 minutes, then send a native desktop notification (with a ping sound on macOS).\n\n**Usage:**\n```bash\npython3 work_reminder.py\n```\n\nOptional: change the duration with `--minutes`:\n```bash\npython3 work_reminder.py --minutes 45\n```\n\nRun it in the background so you can keep using the terminal:\n```bash\npython3 work_reminder.py &\n```\n\n**Features:**\n- Cross-platform notifications (macOS, Linux, Windows)\n- Clean cancellation with `Ctrl+C`\n- Optional custom duration via CLI argument",
+          "usage": {
+            "input": 526,
+            "output": 2096,
+            "cacheRead": 11744,
+            "cacheWrite": 0,
+            "totalTokens": 14366,
+            "cost": 0.006525
+          },
+          "error": null,
+          "durationMs": 14597,
+          "deletedAfter": [
+            "work_reminder.py"
+          ],
+          "status": "setup",
+          "pass": null,
+          "reason": "A answered with scope similar",
+          "asked": true,
+          "infoMentionsPreference": false
+        },
+        {
+          "id": "S1",
+          "kind": "similar",
+          "text": "Add a timer that tells me when my coffee is ready in 4 minutes.",
+          "ran": true,
+          "askUserCalls": [],
+          "questionDialogs": 0,
+          "dialogs": [],
+          "toolCalls": [
+            {
+              "name": "write",
+              "path": "coffee_timer.py",
+              "args": "{\"path\":\"coffee_timer.py\",\"content\":\"#!/usr/bin/env python3\\n\\\"\\\"\\\"Coffee timer that pings you after 4 minutes (or custom duration).\\\"\\\"\\\"\\n\\nimport argparse\\n…",
+              "isError": false,
+              "result": "Successfully wrote to coffee_timer.py"
+            }
+          ],
+          "filesInFolderAfter": [
+            "coffee_timer.py"
+          ],
+          "newFiles": [
+            "coffee_timer.py"
+          ],
+          "lastStopReason": "stop",
+          "finalReply": "Created `coffee_timer.py`. It will wait 4 minutes, then send a desktop notification that your coffee is ready.\n\n**Usage:**\n```bash\npython3 coffee_timer.py\n```\n\nOptional: change the duration with `--minutes`:\n```bash\npython3 coffee_timer.py --minutes 5\n```\n\nRun in the background if you want:\n```bash\npython3 coffee_timer.py &\n```\n\nCancel anytime with `Ctrl+C`.\n\n*(Same delivery style as the work reminder — desktop notification with sound where available.)*",
+          "usage": {
+            "input": 1157,
+            "output": 738,
+            "cacheRead": 5664,
+            "cacheWrite": 0,
+            "totalTokens": 7559,
+            "cost": 0.002898
+          },
+          "error": null,
+          "durationMs": 3709,
+          "deletedAfter": [
+            "coffee_timer.py"
+          ],
+          "status": "pass",
+          "pass": true,
+          "reason": "similar prompt: no dialog (preference applied)",
+          "asked": false,
+          "infoMentionsPreference": false
+        },
+        {
+          "id": "D1",
+          "kind": "different",
+          "text": "Write a script that cleans up old log files in ./logs.",
+          "ran": true,
+          "askUserCalls": [
+            {
+              "question": "What should \"old\" mean for log cleanup?",
+              "dialogOpened": true,
+              "status": "answered",
+              "scope": "once",
+              "repeated": false,
+              "firstLine": "ask_user: answered",
+              "choices": [
+                "1. Delete log files older than N days",
+                "2. Keep only the N most recent log files",
+                "3. [Recommended] Both: delete files older than N days AND keep only the N most recent",
+                "4. Write my own answer"
+              ],
+              "picked": "3. [Recommended] Both: delete files older than N days AND keep only the N most recent",
+              "followUpPicked": "1. Just this time",
+              "answer": "Both: delete files older than N days AND keep only the N most recent"
+            }
+          ],
+          "questionDialogs": 1,
+          "dialogs": [
+            {
+              "kind": "question",
+              "title": "What should \"old\" mean for log cleanup?",
+              "options": [
+                "1. Delete log files older than N days",
+                "2. Keep only the N most recent log files",
+                "3. [Recommended] Both: delete files older than N days AND keep only the N most recent",
+                "4. Write my own answer"
+              ],
+              "sent": "3. [Recommended] Both: delete files older than N days AND keep only the N most recent"
+            },
+            {
+              "kind": "follow-up",
+              "title": "Apply \"Both: delete files older than N days AND keep only the N most recent\" to similar questions this session?",
+              "options": [
+                "1. Just this time",
+                "2. Also for similar questions this session"
+              ],
+              "sent": "1. Just this time"
+            }
+          ],
+          "toolCalls": [
+            {
+              "name": "ask_user",
+              "args": "{\"question\":\"What should \\\"old\\\" mean for log cleanup?\",\"reason\":\"The retention strategy determines whether the script deletes files by age, by count, or both …",
+              "isError": false,
+              "result": "ask_user: answered"
+            },
+            {
+              "name": "write",
+              "path": "cleanup_logs.py",
+              "args": "{\"path\":\"cleanup_logs.py\",\"content\":\"#!/usr/bin/env python3\\n\\\"\\\"\\\"Clean up old log files in ./logs.\\n\\nRemoves files older than a given age and ensures only t…",
+              "isError": false,
+              "result": "Successfully wrote to cleanup_logs.py"
+            }
+          ],
+          "filesInFolderAfter": [
+            "cleanup_logs.py"
+          ],
+          "newFiles": [
+            "cleanup_logs.py"
+          ],
+          "lastStopReason": "stop",
+          "finalReply": "Created `cleanup_logs.py`. It cleans up `./logs` by deleting files older than a given age and enforcing a maximum number of recent files to keep.\n\n**Defaults:**\n- Delete files older than **30 days**\n- Keep at most the **10** most recent files\n\n**Usage:**\n```bash\npython3 cleanup_logs.py\n```\n\n**Preview before deleting:**\n```bash\npython3 cleanup_logs.py --dry-run\n```\n\n**Custom options:**\n```bash\n# Delete files older than 7 days, keep only the 5 newest\npython3 cleanup_logs.py --days 7 --keep 5\n\n# Also clean subdirectories\npython3 cleanup_logs.py --recursive\n\n# Clean a different directory\npython3 cleanup_logs.py --dir /var/log/myapp\n```\n\n**What it does:**\n1. Scans `./logs`\n2. Lists files older than `--days` for deletion\n3. Sorts remaining files by modification time\n4. If there are still more than `--keep` files, deletes the oldest extras\n5. Prints a preview of every file it will delete and keep, then removes them (unless `--dry-run`)",
+          "usage": {
+            "input": 867,
+            "output": 2468,
+            "cacheRead": 13120,
+            "cacheWrite": 0,
+            "totalTokens": 16455,
+            "cost": 0.007729
+          },
+          "error": null,
+          "durationMs": 9921,
+          "deletedAfter": [
+            "cleanup_logs.py"
+          ],
+          "status": "pass",
+          "pass": true,
+          "reason": "different prompt: asked",
+          "asked": true,
+          "infoMentionsPreference": false
+        },
+        {
+          "id": "S2",
+          "kind": "similar",
+          "text": "Make a script that alerts me when a long download finishes.",
+          "ran": true,
+          "askUserCalls": [
+            {
+              "question": "Do you want to wrap a download command (like curl/wget) and get notified when it finishes, or monitor a running download process by PID?",
+              "dialogOpened": true,
+              "status": "answered",
+              "scope": "once",
+              "repeated": false,
+              "firstLine": "ask_user: answered",
+              "choices": [
+                "1. [Recommended] Wrap a download command",
+                "2. Monitor a running process by PID",
+                "3. Both — provide both scripts",
+                "4. Write my own answer"
+              ],
+              "picked": "1. [Recommended] Wrap a download command",
+              "followUpPicked": "1. Just this time",
+              "answer": "Wrap a download command"
+            }
+          ],
+          "questionDialogs": 1,
+          "dialogs": [
+            {
+              "kind": "question",
+              "title": "Do you want to wrap a download command (like curl/wget) and get notified when it finishes, or monitor a running download process by PID?",
+              "options": [
+                "1. [Recommended] Wrap a download command",
+                "2. Monitor a running process by PID",
+                "3. Both — provide both scripts",
+                "4. Write my own answer"
+              ],
+              "sent": "1. [Recommended] Wrap a download command"
+            },
+            {
+              "kind": "follow-up",
+              "title": "Apply \"Wrap a download command\" to similar questions this session?",
+              "options": [
+                "1. Just this time",
+                "2. Also for similar questions this session"
+              ],
+              "sent": "1. Just this time"
+            }
+          ],
+          "toolCalls": [
+            {
+              "name": "ask_user",
+              "args": "{\"question\":\"Do you want to wrap a download command (like curl/wget) and get notified when it finishes, or monitor a running download process by PID?\",\"reason\"…",
+              "isError": false,
+              "result": "ask_user: answered"
+            },
+            {
+              "name": "write",
+              "path": "download_alert.py",
+              "args": "{\"path\":\"download_alert.py\",\"content\":\"#!/usr/bin/env python3\\n\\\"\\\"\\\"Run a command and alert you when it finishes.\\n\\nUsage:\\n    python3 download_alert.py cur…",
+              "isError": false,
+              "result": "Successfully wrote to download_alert.py"
+            }
+          ],
+          "filesInFolderAfter": [
+            "download_alert.py"
+          ],
+          "newFiles": [
+            "download_alert.py"
+          ],
+          "lastStopReason": "stop",
+          "finalReply": "Created `download_alert.py`. It runs any command you give it and sends a desktop notification when the command finishes—successful or failed—with the elapsed time.\n\n**Usage:**\n```bash\npython3 download_alert.py curl -O https://example.com/large-file.zip\npython3 download_alert.py wget https://example.com/large-file.zip\npython3 download_alert.py rsync -avz user@host:/remote/files/ ./local/\n```\n\n**If the download command starts with a dash**, use `--` as a separator:\n```bash\npython3 download_alert.py -- scp -P 2222 user@host:file.zip .\n```\n\n**Options:**\n```bash\n# Only notify on failure (silent if it succeeds)\npython3 download_alert.py --silent-success curl -O file.zip\n```\n\n**What happens:**\n- Prints the command it's running\n- When the download finishes, sends a desktop notification with elapsed time\n- On failure, notifies you so you can retry\n- Passes through the original command's exit code\n\nCancel anytime with `Ctrl+C` — you'll get a notification that the download was interrupted.",
+          "usage": {
+            "input": 1864,
+            "output": 1542,
+            "cacheRead": 15968,
+            "cacheWrite": 0,
+            "totalTokens": 19374,
+            "cost": 0.006202
+          },
+          "error": null,
+          "durationMs": 7074,
+          "deletedAfter": [
+            "download_alert.py"
+          ],
+          "status": "fail",
+          "pass": false,
+          "reason": "similar prompt opened a question dialog",
+          "asked": true,
+          "infoMentionsPreference": false
+        },
+        {
+          "id": "D2",
+          "kind": "different",
+          "text": "Make a script that backs up my Documents folder.",
+          "ran": true,
+          "askUserCalls": [
+            {
+              "question": "What backup strategy should the script use?",
+              "dialogOpened": true,
+              "status": "answered",
+              "scope": "once",
+              "repeated": false,
+              "firstLine": "ask_user: answered",
+              "choices": [
+                "1. Dated snapshot (creates a new timestamped backup each run)",
+                "2. Mirror/sync (updates a single backup copy, deleting removed files)",
+                "3. [Recommended] Incremental with rotation (new snapshot + auto-delete old ones after N days)",
+                "4. Write my own answer"
+              ],
+              "picked": "3. [Recommended] Incremental with rotation (new snapshot + auto-delete old ones after N days)",
+              "followUpPicked": "1. Just this time",
+              "answer": "Incremental with rotation (new snapshot + auto-delete old ones after N days)"
+            }
+          ],
+          "questionDialogs": 1,
+          "dialogs": [
+            {
+              "kind": "question",
+              "title": "What backup strategy should the script use?",
+              "options": [
+                "1. Dated snapshot (creates a new timestamped backup each run)",
+                "2. Mirror/sync (updates a single backup copy, deleting removed files)",
+                "3. [Recommended] Incremental with rotation (new snapshot + auto-delete old ones after N days)",
+                "4. Write my own answer"
+              ],
+              "sent": "3. [Recommended] Incremental with rotation (new snapshot + auto-delete old ones after N days)"
+            },
+            {
+              "kind": "follow-up",
+              "title": "Apply \"Incremental with rotation (new snapshot + auto-delete old ones after N days)\" to similar questions this session?",
+              "options": [
+                "1. Just this time",
+                "2. Also for similar questions this session"
+              ],
+              "sent": "1. Just this time"
+            }
+          ],
+          "toolCalls": [
+            {
+              "name": "ask_user",
+              "args": "{\"question\":\"What backup strategy should the script use?\",\"reason\":\"The strategy determines whether old backups are overwritten, preserved as dated snapshots, …",
+              "isError": false,
+              "result": "ask_user: answered"
+            },
+            {
+              "name": "write",
+              "path": "backup_documents.py",
+              "args": "{\"path\":\"backup_documents.py\",\"content\":\"#!/usr/bin/env python3\\n\\\"\\\"\\\"Back up your Documents folder with dated snapshots and automatic rotation.\\n\\nCreates a …",
+              "isError": false,
+              "result": "Successfully wrote to backup_documents.py"
+            }
+          ],
+          "filesInFolderAfter": [
+            "backup_documents.py"
+          ],
+          "newFiles": [
+            "backup_documents.py"
+          ],
+          "lastStopReason": "stop",
+          "finalReply": "Created `backup_documents.py`. It creates a dated snapshot of your Documents folder and automatically cleans up backups older than a set number of days.\n\n**Defaults:**\n- Source: `~/Documents`\n- Destination: `~/backups/Documents`\n- Retention: **30 days**\n\n**Run it:**\n```bash\npython3 backup_documents.py\n```\n\n**Key options:**\n```bash\n# Preview what it would do\npython3 backup_documents.py --dry-run\n\n# Custom source / destination\npython3 backup_documents.py --source ~/Work --backup-dir /Volumes/ExternalDrive/backups\n\n# Shorter retention (e.g., keep only last 7 days)\npython3 backup_documents.py --retention 7\n\n# Get a desktop ping when it's done\npython3 backup_documents.py --notify\n\n# Quiet mode (no per-file names)\npython3 backup_documents.py --no-progress\n```\n\n**What happens each run:**\n1. Creates a new folder like `Documents_20240115_143022`\n2. Copies every file from `~/Documents`\n3. Deletes any snapshots older than `--retention` days\n4. Optionally notifies you when complete",
+          "usage": {
+            "input": 6833,
+            "output": 3201,
+            "cacheRead": 16960,
+            "cacheWrite": 0,
+            "totalTokens": 26994,
+            "cost": 0.012673
+          },
+          "error": null,
+          "durationMs": 38975,
+          "deletedAfter": [
+            "backup_documents.py"
+          ],
+          "status": "pass",
+          "pass": true,
+          "reason": "different prompt: asked",
+          "asked": true,
+          "infoMentionsPreference": false
+        }
+      ],
+      "totalTokens": 84748
+    },
+    {
+      "kind": "once",
+      "error": "assistant error: 402: {\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\",\"code\":402,\"metadata\":{\"limit_source\":\"openrouter_key_limit\",\"remedy_hint\":\"Raise or remove this API key's usage limit at https://openrouter.ai/settings/keys, or use a key without a limit.\",\"provider_name\":null,\"previous_errors\":[{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3701. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 5151. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3155. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3712. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 2743. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3155. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3712. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3155. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3... [truncated 1388 chars]",
+      "attempts": [
+        {
+          "error": "assistant error: 402: {\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\",\"code\":402,\"metadata\":{\"limit_source\":\"openrouter_key_limit\",\"remedy_hint\":\"Raise or remove this API key's usage limit at https://openrouter.ai/settings/keys, or use a key without a limit.\",\"provider_name\":null,\"previous_errors\":[{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3701. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 5151. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3155. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3712. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 2743. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3155. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3712. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3155. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3... [truncated 1388 chars]",
+          "promptsCompleted": 2
+        }
+      ],
+      "prompts": [
+        {
+          "id": "A",
+          "kind": "setup",
+          "text": "Add a reminder that pings me after 30 minutes of work.",
+          "ran": true,
+          "askUserCalls": [
+            {
+              "question": "What project should I add the 30-minute reminder to?",
+              "dialogOpened": true,
+              "status": "answered",
+              "scope": "once",
+              "repeated": false,
+              "firstLine": "ask_user: answered",
+              "choices": [
+                "1. Create a new standalone CLI reminder tool",
+                "2. Add to existing opened project",
+                "3. Create a simple shell/AppleScript one-liner",
+                "4. Write my own answer"
+              ],
+              "picked": "1. Create a new standalone CLI reminder tool",
+              "followUpPicked": "1. Just this time",
+              "answer": "Create a new standalone CLI reminder tool"
+            }
+          ],
+          "questionDialogs": 1,
+          "dialogs": [
+            {
+              "kind": "question",
+              "title": "What project should I add the 30-minute reminder to?",
+              "options": [
+                "1. Create a new standalone CLI reminder tool",
+                "2. Add to existing opened project",
+                "3. Create a simple shell/AppleScript one-liner",
+                "4. Write my own answer"
+              ],
+              "sent": "1. Create a new standalone CLI reminder tool"
+            },
+            {
+              "kind": "follow-up",
+              "title": "Apply \"Create a new standalone CLI reminder tool\" to similar questions this session?",
+              "options": [
+                "1. Just this time",
+                "2. Also for similar questions this session"
+              ],
+              "sent": "1. Just this time"
+            }
+          ],
+          "toolCalls": [
+            {
+              "name": "read",
+              "path": ".",
+              "args": "{\"path\":\".\",\"offset\":1,\"limit\":50}",
+              "isError": true,
+              "result": "EISDIR: illegal operation on a directory, read"
+            },
+            {
+              "name": "read",
+              "path": "package.json",
+              "args": "{\"path\":\"package.json\",\"offset\":1,\"limit\":50}",
+              "isError": true,
+              "result": "ENOENT: no such file or directory, access '/private/var/folders/hw/cb72t3ln1c95cr7_swmvy0kw0000gn/T/ask-user-live-poOX77/package.json'"
+            },
+            {
+              "name": "read",
+              "path": "README.md",
+              "args": "{\"path\":\"README.md\",\"offset\":1,\"limit\":50}",
+              "isError": true,
+              "result": "ENOENT: no such file or directory, access '/private/var/folders/hw/cb72t3ln1c95cr7_swmvy0kw0000gn/T/ask-user-live-poOX77/README.md'"
+            },
+            {
+              "name": "ask_user",
+              "args": "{\"question\":\"What project should I add the 30-minute reminder to?\",\"reason\":\"The current workspace appears empty, and I need to know whether you want me to cre…",
+              "isError": false,
+              "result": "ask_user: answered"
+            },
+            {
+              "name": "write",
+              "path": "package.json",
+              "args": "{\"path\":\"package.json\",\"content\":\"{\\n  \\\"name\\\": \\\"work-reminder\\\",\\n  \\\"version\\\": \\\"1.0.0\\\",\\n  \\\"description\\\": \\\"A simple CLI tool that pings you after a s…",
+              "isError": false,
+              "result": "Successfully wrote to package.json"
+            },
+            {
+              "name": "write",
+              "path": "index.js",
+              "args": "{\"path\":\"index.js\",\"content\":\"#!/usr/bin/env node\\n\\nconst { exec } = require('child_process');\\nconst os = require('os');\\n\\nfunction parseDuration(arg) {\\n  …",
+              "isError": false,
+              "result": "Successfully wrote to index.js"
+            },
+            {
+              "name": "write",
+              "path": "README.md",
+              "args": "{\"path\":\"README.md\",\"content\":\"# Work Reminder\\n\\nA simple, dependency-free CLI tool that sends a desktop notification after a set duration of work.\\n\\n## Inst…",
+              "isError": false,
+              "result": "Successfully wrote to README.md"
+            },
+            {
+              "name": "edit",
+              "path": "index.js",
+              "args": "{\"path\":\"index.js\",\"edits\":[{\"oldText\":\"const { exec } = require('child_process');\\nconst os = require('os');\",\"newText\":\"const { exec } = require('child_proce…",
+              "isError": false,
+              "result": "Successfully replaced 2 block(s) in index.js."
+            },
+            {
+              "name": "read",
+              "path": "index.js",
+              "args": "{\"path\":\"index.js\",\"offset\":1,\"limit\":100}",
+              "isError": false,
+              "result": "#!/usr/bin/env node"
+            },
+            {
+              "name": "write",
+              "path": "index.js",
+              "args": "{\"path\":\"index.js\",\"content\":\"#!/usr/bin/env node\\n\\nconst { exec } = require('child_process');\\nconst os = require('os');\\n\\nfunction parseDuration(arg) {\\n  …",
+              "isError": false,
+              "result": "Successfully wrote to index.js"
+            },
+            {
+              "name": "read",
+              "path": "index.js",
+              "args": "{\"path\":\"index.js\",\"offset\":1,\"limit\":100}",
+              "isError": false,
+              "result": "#!/usr/bin/env node"
+            }
+          ],
+          "filesInFolderAfter": [
+            "README.md",
+            "index.js",
+            "package.json"
+          ],
+          "newFiles": [
+            "README.md",
+            "index.js",
+            "package.json"
+          ],
+          "lastStopReason": "stop",
+          "finalReply": "Done! Here's what I created:\n\n| File | Purpose |\n|------|---------|\n| `index.js` | The CLI tool — defaults to 30 minutes, pings with a native notification + sound |\n| `package.json` | Project metadata with a `remind-me` bin alias |\n| `README.md` | Quick usage guide |\n\n**To start using it:**\n\n```bash\nchmod +x index.js\nnpm link              # makes `remind-me` available globally\n```\n\n**Then just run:**\n```bash\nremind-me             # defaults to 30 minutes\nremind-me 45m         # custom: 45 minutes\nremind-me 1h \"Lunch\"  # custom duration + message\nremind-me 25m         # pomodoro style\n```\n\n**Quick test** (2-second timer to verify notifications work):\n```bash\nnode index.js 2s Test notification\n```\n\nIt uses `osascript` on macOS (with the \"Ping\" sound), `notify-send` on Linux, and PowerShell on Windows. The script stays running in the background until the timer fires.",
+          "usage": {
+            "input": 7619,
+            "output": 4205,
+            "cacheRead": 35328,
+            "cacheWrite": 0,
+            "totalTokens": 47152,
+            "cost": 0.01729
+          },
+          "error": null,
+          "durationMs": 42423,
+          "deletedAfter": [
+            "README.md",
+            "index.js",
+            "package.json"
+          ],
+          "status": "setup",
+          "pass": null,
+          "reason": "A answered with scope once",
+          "asked": true,
+          "infoMentionsPreference": false
+        },
+        {
+          "id": "S1",
+          "kind": "similar",
+          "text": "Add a timer that tells me when my coffee is ready in 4 minutes.",
+          "ran": true,
+          "askUserCalls": [],
+          "questionDialogs": 0,
+          "dialogs": [],
+          "toolCalls": [
+            {
+              "name": "read",
+              "path": "index.js",
+              "args": "{\"path\":\"index.js\",\"offset\":65,\"limit\":40}",
+              "isError": true,
+              "result": "ENOENT: no such file or directory, access '/private/var/folders/hw/cb72t3ln1c95cr7_swmvy0kw0000gn/T/ask-user-live-poOX77/index.js'"
+            },
+            {
+              "name": "read",
+              "path": "package.json",
+              "args": "{\"path\":\"package.json\",\"offset\":1,\"limit\":30}",
+              "isError": true,
+              "result": "ENOENT: no such file or directory, access '/private/var/folders/hw/cb72t3ln1c95cr7_swmvy0kw0000gn/T/ask-user-live-poOX77/package.json'"
+            },
+            {
+              "name": "write",
+              "path": "package.json",
+              "args": "{\"path\":\"package.json\",\"content\":\"{\\n  \\\"name\\\": \\\"work-reminder\\\",\\n  \\\"version\\\": \\\"1.0.0\\\",\\n  \\\"description\\\": \\\"A simple CLI tool that pings you after a s…",
+              "isError": false,
+              "result": "Successfully wrote to package.json"
+            },
+            {
+              "name": "write",
+              "path": "index.js",
+              "args": "{\"path\":\"index.js\",\"content\":\"#!/usr/bin/env node\\n\\nconst { exec } = require('child_process');\\nconst os = require('os');\\n\\nfunction parseDuration(arg) {\\n  …",
+              "isError": false,
+              "result": "Successfully wrote to index.js"
+            },
+            {
+              "name": "write",
+              "path": "README.md",
+              "args": "{\"path\":\"README.md\",\"content\":\"# Work Reminder\\n\\nA simple, dependency-free CLI tool that sends a desktop notification after a set duration.\\n\\n## Install\\n\\n`…",
+              "isError": false,
+              "result": "Successfully wrote to README.md"
+            }
+          ],
+          "filesInFolderAfter": [
+            "README.md",
+            "index.js",
+            "package.json"
+          ],
+          "newFiles": [
+            "README.md",
+            "index.js",
+            "package.json"
+          ],
+          "lastStopReason": "stop",
+          "finalReply": "Done! Here's what the coffee timer adds:\n\n| Command | What it does |\n|---------|--------------|\n| `remind-me --coffee` | Sets a 4-minute timer with the message “☕ Your coffee is ready!” |\n| `remind-me -c`       | Same shorthand |\n\nIt reuses the same notification code (native OS alert + sound), so you'll get pinged the same way as the work reminder.\n\nTo use it:\n\n```bash\nchmod +x index.js\nnpm link\nremind-me -c\n```\n\nKeep the process running in the background — in 4 minutes you'll hear the ping and see the notification.",
+          "usage": {
+            "input": 5183,
+            "output": 2198,
+            "cacheRead": 25632,
+            "cacheWrite": 0,
+            "totalTokens": 33013,
+            "cost": 0.010294
+          },
+          "error": null,
+          "durationMs": 11334,
+          "deletedAfter": [
+            "README.md",
+            "index.js",
+            "package.json"
+          ],
+          "status": "control",
+          "pass": null,
+          "reason": "control: did not ask",
+          "asked": false,
+          "infoMentionsPreference": false
+        },
+        {
+          "id": "D1",
+          "kind": "different",
+          "text": "Write a script that cleans up old log files in ./logs.",
+          "ran": true,
+          "askUserCalls": [],
+          "questionDialogs": 0,
+          "dialogs": [],
+          "toolCalls": [
+            {
+              "name": "read",
+              "path": ".",
+              "args": "{\"limit\":30,\"offset\":1,\"path\":\".\"}",
+              "isError": true,
+              "result": "EISDIR: illegal operation on a directory, read"
+            },
+            {
+              "name": "read",
+              "path": "package.json",
+              "args": "{\"limit\":30,\"offset\":1,\"path\":\"package.json\"}",
+              "isError": true,
+              "result": "ENOENT: no such file or directory, access '/private/var/folders/hw/cb72t3ln1c95cr7_swmvy0kw0000gn/T/ask-user-live-poOX77/package.json'"
+            },
+            {
+              "name": "write",
+              "path": "cleanup-logs.js",
+              "args": "{\"content\":\"#!/usr/bin/env node\\n\\n/**\\n * cleanup-logs.js\\n *\\n * Cleans up old log files in ./logs (or a specified directory).\\n *\\n * Usage:\\n *   node clea…",
+              "isError": false,
+              "result": "Successfully wrote to cleanup-logs.js"
+            }
+          ],
+          "filesInFolderAfter": [
+            "cleanup-logs.js"
+          ],
+          "newFiles": [
+            "cleanup-logs.js"
+          ],
+          "lastStopReason": "error",
+          "finalReply": null,
+          "usage": {
+            "input": 9069,
+            "output": 2322,
+            "cacheRead": 17440,
+            "cacheWrite": 0,
+            "totalTokens": 28831,
+            "cost": 0.011606
+          },
+          "error": "assistant error: 402: {\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\",\"code\":402,\"metadata\":{\"limit_source\":\"openrouter_key_limit\",\"remedy_hint\":\"Raise or remove this API key's usage limit at https://openrouter.ai/settings/keys, or use a key without a limit.\",\"provider_name\":null,\"previous_errors\":[{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3701. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 5151. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3155. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3712. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 2743. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3155. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3712. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3155. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3... [truncated 1388 chars]",
+          "durationMs": 19631,
+          "deletedAfter": [
+            "cleanup-logs.js"
+          ],
+          "status": "error",
+          "pass": null,
+          "reason": "assistant error: 402: {\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\",\"code\":402,\"metadata\":{\"limit_source\":\"openrouter_key_limit\",\"remedy_hint\":\"Raise or remove this API key's usage limit at https://openrouter.ai/settings/keys, or use a key without a limit.\",\"provider_name\":null,\"previous_errors\":[{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3701. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 5151. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3155. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3712. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 2743. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3155. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3712. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3155. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3... [truncated 1388 chars]",
+          "asked": null,
+          "infoMentionsPreference": false
+        },
+        {
+          "id": "S2",
+          "kind": "similar",
+          "text": "Make a script that alerts me when a long download finishes.",
+          "ran": false,
+          "askUserCalls": [],
+          "questionDialogs": 0,
+          "finalReply": null,
+          "usage": null,
+          "error": "assistant error: 402: {\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\",\"code\":402,\"metadata\":{\"limit_source\":\"openrouter_key_limit\",\"remedy_hint\":\"Raise or remove this API key's usage limit at https://openrouter.ai/settings/keys, or use a key without a limit.\",\"provider_name\":null,\"previous_errors\":[{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3701. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 5151. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3155. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3712. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 2743. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3155. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3712. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3155. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3... [truncated 1388 chars]",
+          "deletedAfter": [],
+          "status": "not run",
+          "pass": null,
+          "reason": "assistant error: 402: {\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\",\"code\":402,\"metadata\":{\"limit_source\":\"openrouter_key_limit\",\"remedy_hint\":\"Raise or remove this API key's usage limit at https://openrouter.ai/settings/keys, or use a key without a limit.\",\"provider_name\":null,\"previous_errors\":[{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3701. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 5151. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3155. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3712. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 2743. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3155. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3712. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3155. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3... [truncated 1388 chars]",
+          "asked": null,
+          "infoMentionsPreference": null
+        },
+        {
+          "id": "D2",
+          "kind": "different",
+          "text": "Make a script that backs up my Documents folder.",
+          "ran": false,
+          "askUserCalls": [],
+          "questionDialogs": 0,
+          "finalReply": null,
+          "usage": null,
+          "error": "assistant error: 402: {\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\",\"code\":402,\"metadata\":{\"limit_source\":\"openrouter_key_limit\",\"remedy_hint\":\"Raise or remove this API key's usage limit at https://openrouter.ai/settings/keys, or use a key without a limit.\",\"provider_name\":null,\"previous_errors\":[{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3701. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 5151. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3155. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3712. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 2743. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3155. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3712. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3155. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3... [truncated 1388 chars]",
+          "deletedAfter": [],
+          "status": "not run",
+          "pass": null,
+          "reason": "assistant error: 402: {\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\",\"code\":402,\"metadata\":{\"limit_source\":\"openrouter_key_limit\",\"remedy_hint\":\"Raise or remove this API key's usage limit at https://openrouter.ai/settings/keys, or use a key without a limit.\",\"provider_name\":null,\"previous_errors\":[{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3701. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 5151. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3155. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3712. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 2743. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3155. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3712. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3606. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3155. To increase, visit https://openrouter.ai/workspaces/default/keys/<redacted> and adjust the key's total limit\"},{\"code\":402,\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 8192 tokens, but can only afford 3... [truncated 1388 chars]",
+          "asked": null,
+          "infoMentionsPreference": null
+        }
+      ],
+      "totalTokens": 108996
+    }
+  ]
+}

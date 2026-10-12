@@ -1,0 +1,1195 @@
+{
+  "generatedAt": "2026-10-12T05:08:09.375Z",
+  "node": "v24.11.0",
+  "pi": "0.87.1",
+  "note": "Real Pi driven without a model: RPC dialog responses, real TUI keystrokes in a pty, print mode, the /ask-user on|off toggle (temp agent dir), and /ask-user-try.",
+  "totals": {
+    "scenarios": 27,
+    "passed": 27,
+    "failed": 0,
+    "sectionErrors": []
+  },
+  "rpc": {
+    "command": "pi --mode rpc --no-session --offline -ne -ns -np -nc -e ./src/index.ts -e ./test/real-test/real-dialog-command.ts",
+    "registered": true,
+    "scenarios": [
+      {
+        "scenario": "recommended",
+        "label": "pick the recommended option, then Just this time",
+        "responsesSent": [
+          {
+            "value": "2. [Recommended] Postgres"
+          },
+          {
+            "value": "1. Just this time"
+          }
+        ],
+        "dialogShown": [
+          {
+            "method": "select",
+            "title": "Which database should the cache use?\n\nWhy it matters: Changes deployment needs; costly to migrate later.\n\n1. SQLite\n   Zero setup; one writer at a time\n\n2. [Recommended] Postgres\n   Needs a server; handles concurrent writers\n\n3. In-memory\n   Fastest; lost on restart",
+            "options": [
+              "1. SQLite",
+              "2. [Recommended] Postgres",
+              "3. In-memory",
+              "4. Write my own answer"
+            ]
+          },
+          {
+            "method": "select",
+            "title": "Apply \"Postgres\" to similar questions this session?",
+            "options": [
+              "1. Just this time",
+              "2. Also for similar questions this session"
+            ]
+          }
+        ],
+        "expected": {
+          "details": {
+            "status": "answered",
+            "question": "Which database should the cache use?",
+            "answer": "Postgres",
+            "source": "option",
+            "recommendation": "Postgres",
+            "followedRecommendation": true,
+            "scope": "once"
+          },
+          "firstLine": "ask_user: answered"
+        },
+        "actual": {
+          "details": {
+            "status": "answered",
+            "question": "Which database should the cache use?",
+            "answer": "Postgres",
+            "source": "option",
+            "recommendation": "Postgres",
+            "followedRecommendation": true,
+            "scope": "once"
+          },
+          "firstLine": "ask_user: answered"
+        },
+        "pass": true,
+        "mismatches": []
+      },
+      {
+        "scenario": "against",
+        "label": "pick against the recommendation",
+        "responsesSent": [
+          {
+            "value": "1. SQLite"
+          },
+          {
+            "value": "1. Just this time"
+          }
+        ],
+        "dialogShown": [
+          {
+            "method": "select",
+            "title": "Which database should the queue use?\n\nWhy it matters: Changes deployment needs; costly to migrate later.\n\n1. SQLite\n   Zero setup; one writer at a time\n\n2. [Recommended] Postgres\n   Needs a server; handles concurrent writers\n\n3. In-memory\n   Fastest; lost on restart",
+            "options": [
+              "1. SQLite",
+              "2. [Recommended] Postgres",
+              "3. In-memory",
+              "4. Write my own answer"
+            ]
+          },
+          {
+            "method": "select",
+            "title": "Apply \"SQLite\" to similar questions this session?",
+            "options": [
+              "1. Just this time",
+              "2. Also for similar questions this session"
+            ]
+          }
+        ],
+        "expected": {
+          "details": {
+            "status": "answered",
+            "question": "Which database should the queue use?",
+            "answer": "SQLite",
+            "source": "option",
+            "recommendation": "Postgres",
+            "followedRecommendation": false,
+            "scope": "once"
+          },
+          "firstLine": "ask_user: answered"
+        },
+        "actual": {
+          "details": {
+            "status": "answered",
+            "question": "Which database should the queue use?",
+            "answer": "SQLite",
+            "source": "option",
+            "recommendation": "Postgres",
+            "followedRecommendation": false,
+            "scope": "once"
+          },
+          "firstLine": "ask_user: answered"
+        },
+        "pass": true,
+        "mismatches": []
+      },
+      {
+        "scenario": "custom",
+        "label": "custom answer, exact (spaces + unicode)",
+        "responsesSent": [
+          {
+            "value": "4. Write my own answer"
+          },
+          {
+            "value": "  keep   both — naïve café 日本語 🚀 é  "
+          },
+          {
+            "value": "1. Just this time"
+          }
+        ],
+        "dialogShown": [
+          {
+            "method": "select",
+            "title": "Where should exports be saved?\n\nWhy it matters: Changes deployment needs; costly to migrate later.\n\n1. SQLite\n   Zero setup; one writer at a time\n\n2. [Recommended] Postgres\n   Needs a server; handles concurrent writers\n\n3. In-memory\n   Fastest; lost on restart",
+            "options": [
+              "1. SQLite",
+              "2. [Recommended] Postgres",
+              "3. In-memory",
+              "4. Write my own answer"
+            ]
+          },
+          {
+            "method": "input",
+            "title": "Where should exports be saved?",
+            "placeholder": "Type your answer"
+          },
+          {
+            "method": "select",
+            "title": "Apply \"  keep   both — naïve café 日本語 🚀 é  \" to similar questions this session?",
+            "options": [
+              "1. Just this time",
+              "2. Also for similar questions this session"
+            ]
+          }
+        ],
+        "expected": {
+          "details": {
+            "status": "answered",
+            "question": "Where should exports be saved?",
+            "answer": "  keep   both — naïve café 日本語 🚀 é  ",
+            "source": "custom",
+            "recommendation": "Postgres",
+            "followedRecommendation": false,
+            "scope": "once"
+          },
+          "firstLine": "ask_user: answered"
+        },
+        "actual": {
+          "details": {
+            "status": "answered",
+            "question": "Where should exports be saved?",
+            "answer": "  keep   both — naïve café 日本語 🚀 é  ",
+            "source": "custom",
+            "recommendation": "Postgres",
+            "followedRecommendation": false,
+            "scope": "once"
+          },
+          "firstLine": "ask_user: answered"
+        },
+        "pass": true,
+        "mismatches": []
+      },
+      {
+        "scenario": "scope-similar",
+        "label": "follow-up: Also for similar questions this session",
+        "responsesSent": [
+          {
+            "value": "2. [Recommended] Postgres"
+          },
+          {
+            "value": "2. Also for similar questions this session"
+          }
+        ],
+        "dialogShown": [
+          {
+            "method": "select",
+            "title": "Which cache eviction policy should we use?\n\nWhy it matters: Changes deployment needs; costly to migrate later.\n\n1. SQLite\n   Zero setup; one writer at a time\n\n2. [Recommended] Postgres\n   Needs a server; handles concurrent writers\n\n3. In-memory\n   Fastest; lost on restart",
+            "options": [
+              "1. SQLite",
+              "2. [Recommended] Postgres",
+              "3. In-memory",
+              "4. Write my own answer"
+            ]
+          },
+          {
+            "method": "select",
+            "title": "Apply \"Postgres\" to similar questions this session?",
+            "options": [
+              "1. Just this time",
+              "2. Also for similar questions this session"
+            ]
+          }
+        ],
+        "expected": {
+          "details": {
+            "status": "answered",
+            "question": "Which cache eviction policy should we use?",
+            "answer": "Postgres",
+            "source": "option",
+            "recommendation": "Postgres",
+            "followedRecommendation": true,
+            "scope": "similar"
+          },
+          "firstLine": "ask_user: answered"
+        },
+        "actual": {
+          "details": {
+            "status": "answered",
+            "question": "Which cache eviction policy should we use?",
+            "answer": "Postgres",
+            "source": "option",
+            "recommendation": "Postgres",
+            "followedRecommendation": true,
+            "scope": "similar"
+          },
+          "firstLine": "ask_user: answered"
+        },
+        "pass": true,
+        "mismatches": []
+      },
+      {
+        "scenario": "scope-esc",
+        "label": "follow-up: Esc keeps the answer, scope once",
+        "responsesSent": [
+          {
+            "value": "1. SQLite"
+          },
+          {
+            "cancelled": true
+          }
+        ],
+        "dialogShown": [
+          {
+            "method": "select",
+            "title": "Which log format should we use?\n\nWhy it matters: Changes deployment needs; costly to migrate later.\n\n1. SQLite\n   Zero setup; one writer at a time\n\n2. [Recommended] Postgres\n   Needs a server; handles concurrent writers\n\n3. In-memory\n   Fastest; lost on restart",
+            "options": [
+              "1. SQLite",
+              "2. [Recommended] Postgres",
+              "3. In-memory",
+              "4. Write my own answer"
+            ]
+          },
+          {
+            "method": "select",
+            "title": "Apply \"SQLite\" to similar questions this session?",
+            "options": [
+              "1. Just this time",
+              "2. Also for similar questions this session"
+            ]
+          }
+        ],
+        "expected": {
+          "details": {
+            "status": "answered",
+            "question": "Which log format should we use?",
+            "answer": "SQLite",
+            "source": "option",
+            "recommendation": "Postgres",
+            "followedRecommendation": false,
+            "scope": "once"
+          },
+          "firstLine": "ask_user: answered"
+        },
+        "actual": {
+          "details": {
+            "status": "answered",
+            "question": "Which log format should we use?",
+            "answer": "SQLite",
+            "source": "option",
+            "recommendation": "Postgres",
+            "followedRecommendation": false,
+            "scope": "once"
+          },
+          "firstLine": "ask_user: answered"
+        },
+        "pass": true,
+        "mismatches": []
+      },
+      {
+        "scenario": "esc-menu",
+        "label": "Esc on the menu",
+        "responsesSent": [
+          {
+            "cancelled": true
+          }
+        ],
+        "dialogShown": [
+          {
+            "method": "select",
+            "title": "How should old log files be handled?\n\nWhy it matters: Changes deployment needs; costly to migrate later.\n\n1. SQLite\n   Zero setup; one writer at a time\n\n2. [Recommended] Postgres\n   Needs a server; handles concurrent writers\n\n3. In-memory\n   Fastest; lost on restart",
+            "options": [
+              "1. SQLite",
+              "2. [Recommended] Postgres",
+              "3. In-memory",
+              "4. Write my own answer"
+            ]
+          }
+        ],
+        "expected": {
+          "details": {
+            "status": "cancelled",
+            "question": "How should old log files be handled?",
+            "cancelReason": "dismissed"
+          },
+          "firstLine": "ask_user: cancelled (dismissed)"
+        },
+        "actual": {
+          "details": {
+            "status": "cancelled",
+            "question": "How should old log files be handled?",
+            "cancelReason": "dismissed"
+          },
+          "firstLine": "ask_user: cancelled (dismissed)"
+        },
+        "pass": true,
+        "mismatches": []
+      },
+      {
+        "scenario": "esc-textbox",
+        "label": "Esc on the text box",
+        "responsesSent": [
+          {
+            "value": "4. Write my own answer"
+          },
+          {
+            "cancelled": true
+          }
+        ],
+        "dialogShown": [
+          {
+            "method": "select",
+            "title": "Should reminders survive a Pi restart?\n\nWhy it matters: Changes deployment needs; costly to migrate later.\n\n1. SQLite\n   Zero setup; one writer at a time\n\n2. [Recommended] Postgres\n   Needs a server; handles concurrent writers\n\n3. In-memory\n   Fastest; lost on restart",
+            "options": [
+              "1. SQLite",
+              "2. [Recommended] Postgres",
+              "3. In-memory",
+              "4. Write my own answer"
+            ]
+          },
+          {
+            "method": "input",
+            "title": "Should reminders survive a Pi restart?",
+            "placeholder": "Type your answer"
+          }
+        ],
+        "expected": {
+          "details": {
+            "status": "cancelled",
+            "question": "Should reminders survive a Pi restart?",
+            "cancelReason": "dismissed"
+          },
+          "firstLine": "ask_user: cancelled (dismissed)"
+        },
+        "actual": {
+          "details": {
+            "status": "cancelled",
+            "question": "Should reminders survive a Pi restart?",
+            "cancelReason": "dismissed"
+          },
+          "firstLine": "ask_user: cancelled (dismissed)"
+        },
+        "pass": true,
+        "mismatches": []
+      },
+      {
+        "scenario": "empty",
+        "label": "empty custom answer",
+        "responsesSent": [
+          {
+            "value": "4. Write my own answer"
+          },
+          {
+            "value": ""
+          }
+        ],
+        "dialogShown": [
+          {
+            "method": "select",
+            "title": "Which format should exports use?\n\nWhy it matters: Changes deployment needs; costly to migrate later.\n\n1. SQLite\n   Zero setup; one writer at a time\n\n2. [Recommended] Postgres\n   Needs a server; handles concurrent writers\n\n3. In-memory\n   Fastest; lost on restart",
+            "options": [
+              "1. SQLite",
+              "2. [Recommended] Postgres",
+              "3. In-memory",
+              "4. Write my own answer"
+            ]
+          },
+          {
+            "method": "input",
+            "title": "Which format should exports use?",
+            "placeholder": "Type your answer"
+          }
+        ],
+        "expected": {
+          "details": {
+            "status": "cancelled",
+            "question": "Which format should exports use?",
+            "cancelReason": "empty_answer"
+          },
+          "firstLine": "ask_user: cancelled (empty_answer)"
+        },
+        "actual": {
+          "details": {
+            "status": "cancelled",
+            "question": "Which format should exports use?",
+            "cancelReason": "empty_answer"
+          },
+          "firstLine": "ask_user: cancelled (empty_answer)"
+        },
+        "pass": true,
+        "mismatches": []
+      },
+      {
+        "scenario": "whitespace",
+        "label": "whitespace-only custom answer",
+        "responsesSent": [
+          {
+            "value": "4. Write my own answer"
+          },
+          {
+            "value": "  \t 　 "
+          }
+        ],
+        "dialogShown": [
+          {
+            "method": "select",
+            "title": "Which retention period should logs use?\n\nWhy it matters: Changes deployment needs; costly to migrate later.\n\n1. SQLite\n   Zero setup; one writer at a time\n\n2. [Recommended] Postgres\n   Needs a server; handles concurrent writers\n\n3. In-memory\n   Fastest; lost on restart",
+            "options": [
+              "1. SQLite",
+              "2. [Recommended] Postgres",
+              "3. In-memory",
+              "4. Write my own answer"
+            ]
+          },
+          {
+            "method": "input",
+            "title": "Which retention period should logs use?",
+            "placeholder": "Type your answer"
+          }
+        ],
+        "expected": {
+          "details": {
+            "status": "cancelled",
+            "question": "Which retention period should logs use?",
+            "cancelReason": "empty_answer"
+          },
+          "firstLine": "ask_user: cancelled (empty_answer)"
+        },
+        "actual": {
+          "details": {
+            "status": "cancelled",
+            "question": "Which retention period should logs use?",
+            "cancelReason": "empty_answer"
+          },
+          "firstLine": "ask_user: cancelled (empty_answer)"
+        },
+        "pass": true,
+        "mismatches": []
+      },
+      {
+        "scenario": "unknown-value",
+        "label": "client returns a value that is not a choice",
+        "responsesSent": [
+          {
+            "value": "Postgres"
+          }
+        ],
+        "dialogShown": [
+          {
+            "method": "select",
+            "title": "Which port should the server use?\n\nWhy it matters: Changes deployment needs; costly to migrate later.\n\n1. SQLite\n   Zero setup; one writer at a time\n\n2. [Recommended] Postgres\n   Needs a server; handles concurrent writers\n\n3. In-memory\n   Fastest; lost on restart",
+            "options": [
+              "1. SQLite",
+              "2. [Recommended] Postgres",
+              "3. In-memory",
+              "4. Write my own answer"
+            ]
+          }
+        ],
+        "expected": {
+          "error": "unexpected dialog response"
+        },
+        "actual": {
+          "error": "ask_user: unexpected dialog response \"Postgres\"; it is not one of the displayed choices"
+        },
+        "pass": true,
+        "mismatches": []
+      },
+      {
+        "scenario": "again-answered",
+        "label": "an identical call made later (after an answer) opens the dialog again",
+        "responsesSent": [
+          {
+            "value": "1. SQLite"
+          },
+          {
+            "value": "1. Just this time"
+          }
+        ],
+        "dialogShown": [
+          {
+            "method": "select",
+            "title": "which DATABASE should   the cache use\n\nWhy it matters: Changes deployment needs; costly to migrate later.\n\n1. SQLite\n   Zero setup; one writer at a time\n\n2. [Recommended] Postgres\n   Needs a server; handles concurrent writers\n\n3. In-memory\n   Fastest; lost on restart",
+            "options": [
+              "1. SQLite",
+              "2. [Recommended] Postgres",
+              "3. In-memory",
+              "4. Write my own answer"
+            ]
+          },
+          {
+            "method": "select",
+            "title": "Apply \"SQLite\" to similar questions this session?",
+            "options": [
+              "1. Just this time",
+              "2. Also for similar questions this session"
+            ]
+          }
+        ],
+        "expected": {
+          "details": {
+            "status": "answered",
+            "question": "which DATABASE should   the cache use",
+            "answer": "SQLite",
+            "source": "option",
+            "recommendation": "Postgres",
+            "followedRecommendation": false,
+            "scope": "once"
+          },
+          "firstLine": "ask_user: answered"
+        },
+        "actual": {
+          "details": {
+            "status": "answered",
+            "question": "which DATABASE should   the cache use",
+            "answer": "SQLite",
+            "source": "option",
+            "recommendation": "Postgres",
+            "followedRecommendation": false,
+            "scope": "once"
+          },
+          "firstLine": "ask_user: answered"
+        },
+        "pass": true,
+        "mismatches": []
+      },
+      {
+        "scenario": "again-dismissed",
+        "label": "an identical call made later (after Esc) opens the dialog again",
+        "responsesSent": [
+          {
+            "cancelled": true
+          }
+        ],
+        "dialogShown": [
+          {
+            "method": "select",
+            "title": "how should old LOG files be handled\n\nWhy it matters: Changes deployment needs; costly to migrate later.\n\n1. SQLite\n   Zero setup; one writer at a time\n\n2. [Recommended] Postgres\n   Needs a server; handles concurrent writers\n\n3. In-memory\n   Fastest; lost on restart",
+            "options": [
+              "1. SQLite",
+              "2. [Recommended] Postgres",
+              "3. In-memory",
+              "4. Write my own answer"
+            ]
+          }
+        ],
+        "expected": {
+          "details": {
+            "status": "cancelled",
+            "question": "how should old LOG files be handled",
+            "cancelReason": "dismissed"
+          },
+          "firstLine": "ask_user: cancelled (dismissed)"
+        },
+        "actual": {
+          "details": {
+            "status": "cancelled",
+            "question": "how should old LOG files be handled",
+            "cancelReason": "dismissed"
+          },
+          "firstLine": "ask_user: cancelled (dismissed)"
+        },
+        "pass": true,
+        "mismatches": []
+      },
+      {
+        "scenario": "invalid",
+        "label": "invalid input (1 option): no dialog",
+        "responsesSent": [],
+        "dialogShown": [],
+        "expected": {
+          "error": "options must be an array of 2 or 3 items"
+        },
+        "actual": {
+          "error": "ask_user: options must be an array of 2 or 3 items (got 1 items)"
+        },
+        "pass": true,
+        "mismatches": []
+      }
+    ],
+    "modelEvents": [],
+    "messagesInContext": 0,
+    "stderr": ""
+  },
+  "tui": {
+    "driver": "python3 test/real-test/real-tui.py (pty)",
+    "durationMs": 31467,
+    "scenarios": [
+      {
+        "scenario": "recommended",
+        "label": "Down + Enter picks choice 2 (recommended), Enter on the follow-up (Just this time)",
+        "keysPressed": [
+          "type '/ask-user-real-check recommended' + Enter",
+          "Down",
+          "Enter",
+          "Enter (follow-up)"
+        ],
+        "dialogShown": {
+          "menu": "/ask-user-real-check recommended                                                                                                                                                                                                                ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n Which database should the cache use?\n Why it matters: Changes deployment needs; costly to migrate later.\n 1. SQLite\n    Zero setup; one writer at a time\n 2. [Recommended] Postgres\n    Needs a server; handles concurrent writers\n 3. In-memory\n    Fastest; lost on restart\n → 1. SQLite\n   2. [Recommended] Postgres\n   3. In-memory\n   4. Write my own answer\n ↑↓ navigate  enter select  escape/ctrl+c cancel\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n~/Documents/Ask_user_Pi_extension (main)\n0.0%/262k (auto)                                                                           moonshotai/kimi-k2.6 • medium",
+          "followup": "   1. SQLite\n → 2. [Recommended] Postgres                                                                                            ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n~/Documents/Ask_user_Pi_extension (main)\n0.0%/262k (auto)                                                                           moonshotai/kimi-k2.6 • medium\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n Apply \"Postgres\" to similar questions this session?\n → 1. Just this time\n   2. Also for similar questions this session\n ↑↓ navigate  enter select  escape/ctrl+c cancel\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n~/Documents/Ask_user_Pi_extension (main)\n0.0%/262k (auto)                                                                           moonshotai/kimi-k2.6 • medium"
+        },
+        "expected": {
+          "details": {
+            "status": "answered",
+            "question": "Which database should the cache use?",
+            "answer": "Postgres",
+            "source": "option",
+            "recommendation": "Postgres",
+            "followedRecommendation": true,
+            "scope": "once"
+          },
+          "firstLine": "ask_user: answered"
+        },
+        "actual": {
+          "details": {
+            "status": "answered",
+            "question": "Which database should the cache use?",
+            "answer": "Postgres",
+            "source": "option",
+            "recommendation": "Postgres",
+            "followedRecommendation": true,
+            "scope": "once"
+          },
+          "firstLine": "ask_user: answered"
+        },
+        "pass": true,
+        "mismatches": []
+      },
+      {
+        "scenario": "esc-menu",
+        "label": "Esc on the menu",
+        "keysPressed": [
+          "type '/ask-user-real-check esc-menu' + Enter",
+          "Esc"
+        ],
+        "dialogShown": {
+          "menu": "/ask-user-real-check esc-menu                                                                                                                                                                                                                   ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n How should old log files be handled?\n Why it matters: Changes deployment needs; costly to migrate later.\n 1. SQLite\n    Zero setup; one writer at a time\n 2. [Recommended] Postgres\n    Needs a server; handles concurrent writers\n 3. In-memory\n    Fastest; lost on restart\n → 1. SQLite\n   2. [Recommended] Postgres\n   3. In-memory\n   4. Write my own answer\n ↑↓ navigate  enter select  escape/ctrl+c cancel\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n~/Documents/Ask_user_Pi_extension (main)\n0.0%/262k (auto)                                                                           moonshotai/kimi-k2.6 • medium"
+        },
+        "expected": {
+          "details": {
+            "status": "cancelled",
+            "question": "How should old log files be handled?",
+            "cancelReason": "dismissed"
+          },
+          "firstLine": "ask_user: cancelled (dismissed)"
+        },
+        "actual": {
+          "details": {
+            "status": "cancelled",
+            "question": "How should old log files be handled?",
+            "cancelReason": "dismissed"
+          },
+          "firstLine": "ask_user: cancelled (dismissed)"
+        },
+        "pass": true,
+        "mismatches": []
+      },
+      {
+        "scenario": "custom",
+        "label": "choice 4, type a custom answer, Enter, Enter on the follow-up",
+        "keysPressed": [
+          "type '/ask-user-real-check custom' + Enter",
+          "Down",
+          "Down",
+          "Down",
+          "Enter",
+          "type '  Play a sound — naïve café 日本語  '",
+          "Enter",
+          "Enter (follow-up)"
+        ],
+        "dialogShown": {
+          "menu": "/ask-user-real-check custom                                                                                                                                                                                                                     ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n Where should exports be saved?\n Why it matters: Changes deployment needs; costly to migrate later.\n 1. SQLite\n    Zero setup; one writer at a time\n 2. [Recommended] Postgres\n    Needs a server; handles concurrent writers\n 3. In-memory\n    Fastest; lost on restart\n → 1. SQLite\n   2. [Recommended] Postgres\n   3. In-memory\n   4. Write my own answer\n ↑↓ navigate  enter select  escape/ctrl+c cancel\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n~/Documents/Ask_user_Pi_extension (main)\n0.0%/262k (auto)                                                                           moonshotai/kimi-k2.6 • medium",
+          "textbox": "   1. SQLite\n → 2. [Recommended] Postgres                                                                                               2. [Recommended] Postgres\n → 3. In-memory                                                                                                            3. In-memory\n → 4. Write my own answer                                                                                               ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n~/Documents/Ask_user_Pi_extension (main)\n0.0%/262k (auto)                                                                           moonshotai/kimi-k2.6 • medium\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n Where should exports be saved?\n>\n enter submit  escape/ctrl+c cancel\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n~/Documents/Ask_user_Pi_extension (main)\n0.0%/262k (auto)                                                                           moonshotai/kimi-k2.6 • medium",
+          "followup": "────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n~/Documents/Ask_user_Pi_extension (main)\n0.0%/262k (auto)                                                                           moonshotai/kimi-k2.6 • medium\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n Apply \"  Play a sound — naïve café 日本語  \" to similar questions this session?\n → 1. Just this time\n   2. Also for similar questions this session\n ↑↓ navigate  enter select  escape/ctrl+c cancel\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n~/Documents/Ask_user_Pi_extension (main)\n0.0%/262k (auto)                                                                           moonshotai/kimi-k2.6 • medium"
+        },
+        "expected": {
+          "details": {
+            "status": "answered",
+            "question": "Where should exports be saved?",
+            "answer": "  Play a sound — naïve café 日本語  ",
+            "source": "custom",
+            "recommendation": "Postgres",
+            "followedRecommendation": false,
+            "scope": "once"
+          },
+          "firstLine": "ask_user: answered"
+        },
+        "actual": {
+          "details": {
+            "status": "answered",
+            "question": "Where should exports be saved?",
+            "answer": "  Play a sound — naïve café 日本語  ",
+            "source": "custom",
+            "recommendation": "Postgres",
+            "followedRecommendation": false,
+            "scope": "once"
+          },
+          "firstLine": "ask_user: answered"
+        },
+        "pass": true,
+        "mismatches": []
+      },
+      {
+        "scenario": "empty",
+        "label": "choice 4, Enter on an empty text box",
+        "keysPressed": [
+          "type '/ask-user-real-check empty' + Enter",
+          "Down",
+          "Down",
+          "Down",
+          "Enter",
+          "Enter"
+        ],
+        "dialogShown": {
+          "menu": "/ask-user-real-check empty                                                                                                                                                                                                                      ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n Which format should exports use?\n Why it matters: Changes deployment needs; costly to migrate later.\n 1. SQLite\n    Zero setup; one writer at a time\n 2. [Recommended] Postgres\n    Needs a server; handles concurrent writers\n 3. In-memory\n    Fastest; lost on restart\n → 1. SQLite\n   2. [Recommended] Postgres\n   3. In-memory\n   4. Write my own answer\n ↑↓ navigate  enter select  escape/ctrl+c cancel\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n~/Documents/Ask_user_Pi_extension (main)\n0.0%/262k (auto)                                                                           moonshotai/kimi-k2.6 • medium",
+          "textbox": "   1. SQLite\n → 2. [Recommended] Postgres                                                                                               2. [Recommended] Postgres\n → 3. In-memory                                                                                                            3. In-memory\n → 4. Write my own answer                                                                                               ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n~/Documents/Ask_user_Pi_extension (main)\n0.0%/262k (auto)                                                                           moonshotai/kimi-k2.6 • medium\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n Which format should exports use?\n>\n enter submit  escape/ctrl+c cancel\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n~/Documents/Ask_user_Pi_extension (main)\n0.0%/262k (auto)                                                                           moonshotai/kimi-k2.6 • medium"
+        },
+        "expected": {
+          "details": {
+            "status": "cancelled",
+            "question": "Which format should exports use?",
+            "cancelReason": "empty_answer"
+          },
+          "firstLine": "ask_user: cancelled (empty_answer)"
+        },
+        "actual": {
+          "details": {
+            "status": "cancelled",
+            "question": "Which format should exports use?",
+            "cancelReason": "empty_answer"
+          },
+          "firstLine": "ask_user: cancelled (empty_answer)"
+        },
+        "pass": true,
+        "mismatches": []
+      },
+      {
+        "scenario": "esc-textbox",
+        "label": "choice 4, Esc in the text box",
+        "keysPressed": [
+          "type '/ask-user-real-check esc-textbox' + Enter",
+          "Down",
+          "Down",
+          "Down",
+          "Enter",
+          "Esc"
+        ],
+        "dialogShown": {
+          "menu": "/ask-user-real-check esc-textbox                                                                                                                                                                                                                ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n Should reminders survive a Pi restart?\n Why it matters: Changes deployment needs; costly to migrate later.\n 1. SQLite\n    Zero setup; one writer at a time\n 2. [Recommended] Postgres\n    Needs a server; handles concurrent writers\n 3. In-memory\n    Fastest; lost on restart\n → 1. SQLite\n   2. [Recommended] Postgres\n   3. In-memory\n   4. Write my own answer\n ↑↓ navigate  enter select  escape/ctrl+c cancel\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n~/Documents/Ask_user_Pi_extension (main)\n0.0%/262k (auto)                                                                           moonshotai/kimi-k2.6 • medium",
+          "textbox": "   1. SQLite\n → 2. [Recommended] Postgres                                                                                               2. [Recommended] Postgres\n → 3. In-memory                                                                                                            3. In-memory\n → 4. Write my own answer                                                                                               ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n~/Documents/Ask_user_Pi_extension (main)\n0.0%/262k (auto)                                                                           moonshotai/kimi-k2.6 • medium\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n Should reminders survive a Pi restart?\n>\n enter submit  escape/ctrl+c cancel\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n~/Documents/Ask_user_Pi_extension (main)\n0.0%/262k (auto)                                                                           moonshotai/kimi-k2.6 • medium"
+        },
+        "expected": {
+          "details": {
+            "status": "cancelled",
+            "question": "Should reminders survive a Pi restart?",
+            "cancelReason": "dismissed"
+          },
+          "firstLine": "ask_user: cancelled (dismissed)"
+        },
+        "actual": {
+          "details": {
+            "status": "cancelled",
+            "question": "Should reminders survive a Pi restart?",
+            "cancelReason": "dismissed"
+          },
+          "firstLine": "ask_user: cancelled (dismissed)"
+        },
+        "pass": true,
+        "mismatches": []
+      },
+      {
+        "scenario": "scope-similar",
+        "label": "Down + Enter, then Down + Enter on the follow-up (Also for similar)",
+        "keysPressed": [
+          "type '/ask-user-real-check scope-similar' + Enter",
+          "Down",
+          "Enter",
+          "Down (follow-up)",
+          "Enter (follow-up)"
+        ],
+        "dialogShown": {
+          "menu": "/ask-user-real-check scope-similar                                                                                                                                                                                                              ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n Which cache eviction policy should we use?\n Why it matters: Changes deployment needs; costly to migrate later.\n 1. SQLite\n    Zero setup; one writer at a time\n 2. [Recommended] Postgres\n    Needs a server; handles concurrent writers\n 3. In-memory\n    Fastest; lost on restart\n → 1. SQLite\n   2. [Recommended] Postgres\n   3. In-memory\n   4. Write my own answer\n ↑↓ navigate  enter select  escape/ctrl+c cancel\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n~/Documents/Ask_user_Pi_extension (main)\n0.0%/262k (auto)                                                                           moonshotai/kimi-k2.6 • medium",
+          "followup": "   1. SQLite\n → 2. [Recommended] Postgres                                                                                            ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n~/Documents/Ask_user_Pi_extension (main)\n0.0%/262k (auto)                                                                           moonshotai/kimi-k2.6 • medium\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n Apply \"Postgres\" to similar questions this session?\n → 1. Just this time\n   2. Also for similar questions this session\n ↑↓ navigate  enter select  escape/ctrl+c cancel\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n~/Documents/Ask_user_Pi_extension (main)\n0.0%/262k (auto)                                                                           moonshotai/kimi-k2.6 • medium"
+        },
+        "expected": {
+          "details": {
+            "status": "answered",
+            "question": "Which cache eviction policy should we use?",
+            "answer": "Postgres",
+            "source": "option",
+            "recommendation": "Postgres",
+            "followedRecommendation": true,
+            "scope": "similar"
+          },
+          "firstLine": "ask_user: answered"
+        },
+        "actual": {
+          "details": {
+            "status": "answered",
+            "question": "Which cache eviction policy should we use?",
+            "answer": "Postgres",
+            "source": "option",
+            "recommendation": "Postgres",
+            "followedRecommendation": true,
+            "scope": "similar"
+          },
+          "firstLine": "ask_user: answered"
+        },
+        "pass": true,
+        "mismatches": []
+      },
+      {
+        "scenario": "scope-esc",
+        "label": "Enter on choice 1, then Esc on the follow-up",
+        "keysPressed": [
+          "type '/ask-user-real-check scope-esc' + Enter",
+          "Enter",
+          "Esc (follow-up)"
+        ],
+        "dialogShown": {
+          "menu": "/ask-user-real-check scope-esc                                                                                                                                                                                                                  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n Which log format should we use?\n Why it matters: Changes deployment needs; costly to migrate later.\n 1. SQLite\n    Zero setup; one writer at a time\n 2. [Recommended] Postgres\n    Needs a server; handles concurrent writers\n 3. In-memory\n    Fastest; lost on restart\n → 1. SQLite\n   2. [Recommended] Postgres\n   3. In-memory\n   4. Write my own answer\n ↑↓ navigate  enter select  escape/ctrl+c cancel\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n~/Documents/Ask_user_Pi_extension (main)\n0.0%/262k (auto)                                                                           moonshotai/kimi-k2.6 • medium",
+          "followup": "────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n~/Documents/Ask_user_Pi_extension (main)\n0.0%/262k (auto)                                                                           moonshotai/kimi-k2.6 • medium\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n Apply \"SQLite\" to similar questions this session?\n → 1. Just this time\n   2. Also for similar questions this session\n ↑↓ navigate  enter select  escape/ctrl+c cancel\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n~/Documents/Ask_user_Pi_extension (main)\n0.0%/262k (auto)                                                                           moonshotai/kimi-k2.6 • medium"
+        },
+        "expected": {
+          "details": {
+            "status": "answered",
+            "question": "Which log format should we use?",
+            "answer": "SQLite",
+            "source": "option",
+            "recommendation": "Postgres",
+            "followedRecommendation": false,
+            "scope": "once"
+          },
+          "firstLine": "ask_user: answered"
+        },
+        "actual": {
+          "details": {
+            "status": "answered",
+            "question": "Which log format should we use?",
+            "answer": "SQLite",
+            "source": "option",
+            "recommendation": "Postgres",
+            "followedRecommendation": false,
+            "scope": "once"
+          },
+          "firstLine": "ask_user: answered"
+        },
+        "pass": true,
+        "mismatches": []
+      }
+    ],
+    "terminal": "120x45",
+    "startup": "ok"
+  },
+  "print": {
+    "scenarios": [
+      {
+        "scenario": "unavailable",
+        "label": "print mode (no UI) returns unavailable without a model call",
+        "command": "pi -p --no-session --offline -ne -ns -np -nc -e ./src/index.ts -e ./test/real-test/real-dialog-command.ts \"/ask-user-real-check unavailable\" < /dev/null",
+        "dialogShown": null,
+        "expected": {
+          "details": {
+            "status": "unavailable",
+            "question": "Should the CLI keep tasks on disk?"
+          },
+          "firstLine": "ask_user: unavailable"
+        },
+        "actual": {
+          "details": {
+            "status": "unavailable",
+            "question": "Should the CLI keep tasks on disk?"
+          },
+          "firstLine": "ask_user: unavailable"
+        },
+        "pass": true,
+        "mismatches": []
+      }
+    ],
+    "witness": {
+      "command": "pi --mode json --no-session --offline -ne -ns -np -nc -e ./src/index.ts -e ./test/real-test/real-dialog-command.ts \"/ask-user-real-check unavailable\"",
+      "eventTypes": [
+        "session",
+        "entry_appended"
+      ]
+    }
+  },
+  "toggle": {
+    "agentDir": "(temp dir, removed afterwards)",
+    "scenarios": [
+      {
+        "scenario": "off",
+        "label": "default on; /ask-user off removes ask_user from the tools and the prompt; /ask_user alias works",
+        "commandsSent": [
+          "/active-tools-witness",
+          "/ask-user off",
+          "/active-tools-witness",
+          "/ask_user status"
+        ],
+        "dialogShown": null,
+        "expected": {
+          "before": "active",
+          "after": "not active",
+          "file": {
+            "enabled": false
+          }
+        },
+        "actual": {
+          "witnessBefore": {
+            "active": [
+              "read",
+              "bash",
+              "edit",
+              "write",
+              "ask_user"
+            ],
+            "askUserActive": true,
+            "promptMentionsAskUser": true
+          },
+          "witnessAfter": {
+            "active": [
+              "read",
+              "bash",
+              "edit",
+              "write"
+            ],
+            "askUserActive": false,
+            "promptMentionsAskUser": false
+          },
+          "notes": [
+            [
+              {
+                "message": "witness {\"active\":[\"read\",\"bash\",\"edit\",\"write\",\"ask_user\"],\"askUserActive\":true,\"promptMentionsAskUser\":true}",
+                "level": "info"
+              }
+            ],
+            [
+              {
+                "message": "ask_user is OFF: the agent won't ask and will decide on its own",
+                "level": "info"
+              }
+            ],
+            [
+              {
+                "message": "witness {\"active\":[\"read\",\"bash\",\"edit\",\"write\"],\"askUserActive\":false,\"promptMentionsAskUser\":false}",
+                "level": "info"
+              }
+            ],
+            [
+              {
+                "message": "ask_user is OFF (saved in /var/folders/hw/cb72t3ln1c95cr7_swmvy0kw0000gn/T/ask-user-real-UhHhMM/agent/ask-user-state.json). In this session the tool is not active.",
+                "level": "info"
+              }
+            ]
+          ],
+          "file": {
+            "enabled": false
+          }
+        },
+        "pass": true,
+        "mismatches": []
+      },
+      {
+        "scenario": "persist-and-on",
+        "label": "the OFF setting survives a fresh Pi process; /ask-user on restores ask_user",
+        "commandsSent": [
+          "/active-tools-witness",
+          "/ask-user on",
+          "/active-tools-witness"
+        ],
+        "dialogShown": null,
+        "expected": {
+          "startup": "OFF",
+          "after": "active",
+          "file": {
+            "enabled": true
+          }
+        },
+        "actual": {
+          "startupNotes": [
+            {
+              "message": "ask_user is OFF: the agent won't ask and will decide on its own. Turn it back on with /ask-user on.",
+              "level": "info"
+            }
+          ],
+          "witnessBefore": {
+            "active": [
+              "read",
+              "bash",
+              "edit",
+              "write"
+            ],
+            "askUserActive": false,
+            "promptMentionsAskUser": false
+          },
+          "witnessAfter": {
+            "active": [
+              "read",
+              "bash",
+              "edit",
+              "write",
+              "ask_user"
+            ],
+            "askUserActive": true,
+            "promptMentionsAskUser": true
+          },
+          "file": {
+            "enabled": true
+          }
+        },
+        "pass": true,
+        "mismatches": []
+      },
+      {
+        "scenario": "excluded",
+        "label": "started with --tools read: /ask-user on says why it can't turn on",
+        "commandsSent": [
+          "/ask-user on",
+          "/active-tools-witness"
+        ],
+        "dialogShown": null,
+        "expected": {
+          "warning": "started without it"
+        },
+        "actual": {
+          "notes": [
+            {
+              "message": "ask_user is saved as ON, but this Pi session was started without it (--tools, --exclude-tools or --no-tools), so it can't be turned on until Pi is restarted without that option.",
+              "level": "warning"
+            }
+          ],
+          "witness": {
+            "active": [
+              "read"
+            ],
+            "askUserActive": false,
+            "promptMentionsAskUser": false
+          }
+        },
+        "pass": true,
+        "mismatches": []
+      },
+      {
+        "scenario": "corrupt-file",
+        "label": "a corrupt state file: ON plus a warning, no crash",
+        "commandsSent": [
+          "(state file = \"{oops\")",
+          "/active-tools-witness"
+        ],
+        "dialogShown": null,
+        "expected": {
+          "warning": "stays ON",
+          "active": true
+        },
+        "actual": {
+          "startupNotes": [
+            {
+              "message": "Ignoring /var/folders/hw/cb72t3ln1c95cr7_swmvy0kw0000gn/T/ask-user-real-UhHhMM/agent/ask-user-state.json: it isn't {\"enabled\": true|false}; ask_user stays ON.",
+              "level": "warning"
+            }
+          ],
+          "witness": {
+            "active": [
+              "read",
+              "bash",
+              "edit",
+              "write",
+              "ask_user"
+            ],
+            "askUserActive": true,
+            "promptMentionsAskUser": true
+          }
+        },
+        "pass": true,
+        "mismatches": []
+      }
+    ]
+  },
+  "try": {
+    "scenarios": [
+      {
+        "scenario": "try-invalid",
+        "label": "/ask-user-try invalid: tool error, no dialog",
+        "commandsSent": [
+          "/ask-user-try invalid"
+        ],
+        "dialogShown": [],
+        "expected": "tool error, no dialog",
+        "actual": [
+          {
+            "message": "tool error (no dialog opened): ask_user: options must be an array of 2 or 3 items (got 1 items)",
+            "level": "error"
+          }
+        ],
+        "pass": true,
+        "mismatches": []
+      },
+      {
+        "scenario": "try-norec",
+        "label": "/ask-user-try norec: real dialog, full result shown",
+        "commandsSent": [
+          "/ask-user-try norec"
+        ],
+        "dialogShown": [
+          {
+            "method": "select",
+            "title": "How should old log files be handled?\n\nWhy it matters: Deleting is permanent; archiving uses disk space.\n\n1. Delete them\n   Frees space; can't be undone\n\n2. Archive them\n   Recoverable; the archive keeps growing",
+            "options": [
+              "1. Delete them",
+              "2. Archive them",
+              "3. Write my own answer"
+            ],
+            "response": {
+              "value": "1. Delete them"
+            }
+          },
+          {
+            "method": "select",
+            "title": "Apply \"Delete them\" to similar questions this session?",
+            "options": [
+              "1. Just this time",
+              "2. Also for similar questions this session"
+            ],
+            "response": {
+              "value": "1. Just this time"
+            }
+          }
+        ],
+        "expected": "answered Delete them, scope once",
+        "actual": [
+          {
+            "message": "ask_user: answered\nQuestion: \"How should old log files be handled?\"\nThe user chose the option \"Delete them\".\nThis answer applies to this question only.\n\ndetails: {\n  \"status\": \"answered\",\n  \"question\": \"How should old log files be handled?\",\n  \"answer\": \"Delete them\",\n  \"source\": \"option\",\n  \"scope\": \"once\"\n}",
+            "level": "info"
+          }
+        ],
+        "pass": true,
+        "mismatches": []
+      }
+    ]
+  }
+}

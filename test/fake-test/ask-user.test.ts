@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import type { AgentToolResult } from "@earendil-works/pi-coding-agent";
-import { CUSTOM_ANSWER_LABEL } from "../src/ask-user.ts";
+import { CUSTOM_ANSWER_LABEL } from "../../src/ask-user.ts";
 import {
 	QUESTION,
 	REASON,
@@ -46,7 +46,8 @@ const EXPECTED_TITLE = [
 ].join("\n");
 
 /** Words a cancelled/unavailable result must never contain. */
-const NO_ANSWER_FORBIDDEN = [/Postgres/, /default/i, /proceed with/i, /go ahead/i, /agreed/i, /approved/i, /ask (it )?again|re-ask/i];
+// Pushing to re-ask is forbidden; "Don't ask again about this decision" is the opposite and allowed.
+const NO_ANSWER_FORBIDDEN = [/Postgres/, /default/i, /proceed with/i, /go ahead/i, /agreed/i, /approved/i, /(?<!don't )\bask (it )?again\b|re-ask/i];
 
 function assertNoAnswerText(text: string) {
 	assert.match(text, /do not assume/i, "tells the agent not to assume an answer");
@@ -75,15 +76,31 @@ describe("registration", () => {
 
 	test("model-facing description and guidelines carry the asking policy", () => {
 		assert.ok(tool.description.length > 0);
+		assert.match(tool.description, /materially changes user-visible behavior, scope, or the amount of rework/);
+		assert.match(tool.description, /reuse an earlier answer to the same decision in the same scenario instead of asking again; ask again when a new task or scenario needs its own answer/);
 		assert.equal(typeof tool.promptSnippet, "string");
-		assert.ok(tool.promptSnippet!.length > 0);
+		assert.match(tool.promptSnippet!, /single most important decision that is material and not yet decided/, "snippet keeps the condition");
 		assert.ok(Array.isArray(tool.promptGuidelines) && tool.promptGuidelines.length > 0);
 		const guidance = tool.promptGuidelines!.join("\n");
-		assert.match(guidance, /ask_user/);
-		assert.match(guidance, /behavior|scope|rework/i, "when to ask");
-		assert.match(guidance, /your call|delegat/i, "delegated choices proceed");
-		assert.match(guidance, /cancelled|unavailable/, "what to do without an answer");
-		assert.match(guidance, /do not (invent|assume)/i);
+		assert.ok(tool.promptGuidelines!.every((g) => g.includes("ask_user")), "each global bullet names the tool");
+		assert.match(guidance, /materially changes user-visible behavior, scope, or the amount of rework/, "when to ask");
+		assert.match(guidance, /single most important open decision first, before starting the work/, "ask first, once");
+		assert.match(guidance, /second question only if another decision is equally material/);
+		assert.match(guidance, /"your call", "up to you", "as you think best"/, "delegated choices proceed");
+		assert.match(guidance, /decide and state your choice/);
+		assert.match(guidance, /\(library or framework, file names and layout, flags, internal structure\)/, "unnoticed details");
+		assert.doesNotMatch(guidance, /defaults you can state/, "would cover the contract's own Ask example");
+		assert.match(guidance, /before calling ask_user, check the conversation: if you already asked about this decision in the same scenario, reuse the user's answer \(or, if they declined, treat the decision as still open\) instead of asking again/i);
+		assert.match(guidance, /If a new task or scenario needs its own answer, call ask_user again and say in the reason what is different/);
+		assert.doesNotMatch(guidance, /never repeat|do not use ask_user to repeat/i, "no blanket never-repeat rule");
+		assert.match(guidance, /even when it differs from your recommendation/);
+		assert.match(guidance, /cancelled because the user dismissed it or gave an empty answer, do not invent or assume an answer and do not ask about that decision again in this scenario/);
+		assert.match(guidance, /cancelled because the run was aborted, you may ask again/);
+		assert.match(guidance, /unavailable, do not call ask_user again in this run/);
+		assert.match(guidance, /scope "similar", the user wants that choice applied to similar decisions for the rest of the session/, "rule 16");
+		assert.match(guidance, /for a later decision you judge similar, don't call ask_user; apply the preference and tell the user you did/);
+		assert.match(guidance, /unsure whether a decision is similar, call ask_user/);
+		assert.match(tool.description, /apply the answer to similar questions this session/);
 	});
 });
 
@@ -209,7 +226,7 @@ describe("dialog", () => {
 			s.calls[0]!.title,
 			`${QUESTION}\n\nWhy it matters: ${REASON}\n\n1. SQLite\n   Zero setup\n\n2. Postgres\n   Needs a server`,
 		);
-		assert.deepEqual(result.details, { status: "answered", question: QUESTION, answer: "SQLite", source: "option" });
+		assert.deepEqual(result.details, { status: "answered", question: QUESTION, answer: "SQLite", source: "option", scope: "once" });
 	});
 });
 
@@ -228,6 +245,7 @@ describe("answered", () => {
 			source: "option",
 			recommendation: "Postgres",
 			followedRecommendation: true,
+			scope: "once",
 		});
 		assert.equal(firstLine(result), "ask_user: answered");
 		assert.ok(textOf(result).includes(QUESTION));
@@ -246,6 +264,7 @@ describe("answered", () => {
 			source: "option",
 			recommendation: "Postgres",
 			followedRecommendation: false,
+			scope: "once",
 		});
 		const text = textOf(result);
 		assert.equal(firstLine(result), "ask_user: answered");
@@ -257,7 +276,7 @@ describe("answered", () => {
 	test("no recommendation → recommendation and followedRecommendation keys are omitted", async () => {
 		const s = session({ select: pick(2) });
 		const result = await run(withoutRecommendation(), s);
-		assert.deepEqual(result.details, { status: "answered", question: QUESTION, answer: "In-memory", source: "option" });
+		assert.deepEqual(result.details, { status: "answered", question: QUESTION, answer: "In-memory", source: "option", scope: "once" });
 		assert.ok(!("recommendation" in result.details));
 		assert.ok(!("followedRecommendation" in result.details));
 	});
@@ -289,6 +308,7 @@ describe("answered", () => {
 			source: "custom",
 			recommendation: "Postgres",
 			followedRecommendation: false,
+			scope: "once",
 		});
 		assert.equal(firstLine(result), "ask_user: answered");
 		assert.ok(textOf(result).includes(JSON.stringify("Use Redis")));
@@ -308,7 +328,7 @@ describe("answered", () => {
 		const typed = "naïve café 日本語 🚀 é — ok";
 		const s = session({ select: pickCustom, input: reply(typed) });
 		const result = await run(withoutRecommendation(), s);
-		assert.deepEqual(result.details, { status: "answered", question: QUESTION, answer: typed, source: "custom" });
+		assert.deepEqual(result.details, { status: "answered", question: QUESTION, answer: typed, source: "custom", scope: "once" });
 	});
 
 	test("custom text equal to the recommended label stays custom, followedRecommendation false", async () => {
@@ -359,6 +379,7 @@ describe("answered", () => {
 			question: QUESTION,
 			answer: `3. ${CUSTOM_ANSWER_LABEL}`,
 			source: "option",
+			scope: "once",
 		});
 		assert.equal(asOption.count("input"), 0);
 
