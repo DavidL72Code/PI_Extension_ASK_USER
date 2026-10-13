@@ -98,7 +98,56 @@ To load or unload the extension itself, run these from the project folder:
 | Skip all extensions for one run | `pi -ne` |
 | Pick up code edits inside a running Pi | `/reload` |
 
-## Test it yourself in Pi
+## Testing
+
+Testing answers two different questions:
+
+- **Does the tool always return the right result?** This is checked without a
+  model, by hand or with the automated tests. Every run gives the same answer.
+- **Does the model ask at the right times?** Only a real model can show this. It
+  varies between runs, so those results are observations, not proof.
+
+Contents:
+1. [Test by hand](#1-test-by-hand): without a model (free), then with a model
+2. [Run the automated tests](#2-run-the-automated-tests): free tests, then live model tests
+3. [Results and coverage](#3-results-and-coverage)
+
+### 1. Test by hand
+
+#### Without a model (free)
+
+Start Pi with the extension and the dev-only
+[`scripts/try-ask-user.ts`](scripts/try-ask-user.ts) from the project folder:
+
+```bash
+pi --no-session -ne -e ./src/index.ts -e ./scripts/try-ask-user.ts
+```
+
+`/ask-user-try` opens the **real** `ask_user` dialog with an example question and
+shows the full result the agent would get: the text and the details.
+
+| Type in Pi | Then press | Expected result |
+|---|---|---|
+| `/ask-user-try` | ↓ Enter (the `[Recommended]` option), Enter | `ask_user: answered`, "This is the option you recommended", `"scope": "once"` |
+| `/ask-user-try` | Enter (option 1, not recommended), Enter | `answered`, "This is not the option you recommended" |
+| `/ask-user-try` | Enter, then ↓ Enter on the follow-up | `answered`, `"scope": "similar"` |
+| `/ask-user-try norec` | "Write my own answer", type text, Enter, Enter | `answered`, with your text exactly |
+| `/ask-user-try database` | Esc | `ask_user: cancelled (dismissed)` |
+| `/ask-user-try` | "Write my own answer", Esc | `cancelled (dismissed)` |
+| `/ask-user-try` | "Write my own answer", Enter on an empty box | `cancelled (empty_answer)` |
+| `/ask-user-try invalid` | — | `tool error (no dialog opened)` |
+| `/ask-user off`, then `/ask-user status` | — | `ask_user is OFF`; `/ask-user on` turns it back on |
+| `/ask-user-test run_test 42` | — | A randomized PASS/FAIL report in the chat |
+
+The no-UI case, from a normal terminal:
+
+```bash
+pi -p --no-session -ne -e ./src/index.ts -e ./scripts/try-ask-user.ts "/ask-user-try" < /dev/null
+```
+
+Expected: `ask_user: unavailable`. Keep the `< /dev/null`, or Pi waits for input.
+
+#### With a model (needs model credit)
 
 Start Pi in an empty folder, so the agent can't touch your project:
 
@@ -107,45 +156,59 @@ mkdir -p ~/ask-user-playground && cd ~/ask-user-playground
 pi -e ~/Documents/Ask_user_Pi_extension/src/index.ts -e ~/Documents/Ask_user_Pi_extension/scripts/cap-max-tokens.ts
 ```
 
-Type `/new` between scenarios so each one starts fresh. Every `ask_user` call and
-its result show up in the chat.
+Give normal tasks and never mention `ask_user`; the agent decides when to ask.
+Type `/new` between scenarios so each starts fresh. Each `ask_user` call and its
+result appear in the chat.
 
 | Scenario | Prompt | What you do | What should happen |
 |---|---|---|---|
-| Pick an option | `Add a reminder that pings me after 30 minutes of work.` | ↑/↓, Enter, then Enter on the follow-up | `ask_user: answered`; the agent builds with your pick |
-| Pick against the recommendation | Same | Choose an option without `[Recommended]` | The result says it isn't the recommended option; the agent follows your pick |
-| Custom answer | `Make a script that backs up my Documents folder.` | "Write my own answer", type, Enter | Your exact text comes back; the agent uses it |
-| Cancel | `Write a script that cleans up old log files in ./logs.` | Esc | `cancelled (dismissed)`; the agent says the decision is open |
-| Empty answer | Same | "Write my own answer", Enter with nothing typed | `cancelled (empty_answer)` |
-| Apply to similar | The reminder prompt, then `Add a timer that tells me when my coffee is ready.` | First time: "Also for similar questions" | The second task reuses your choice without asking |
+| Pick an option | `Add a reminder that pings me after 30 minutes of work.` | ↑/↓, Enter, then Enter on the follow-up | It asks; then it builds with your pick |
+| Pick against the recommendation | Same | Choose an option without `[Recommended]` | It follows your pick |
+| Custom answer | `Make a script that backs up my Documents folder.` | "Write my own answer", type, Enter | It uses your exact text |
+| Cancel | `Write a script that cleans up old log files in ./logs.` | Esc | It says the decision is still open |
+| Empty answer | Same | "Write my own answer", Enter with nothing typed | Same as cancel |
+| Apply to similar | The reminder prompt, then (no `/new`) `Add a timer that tells me when my coffee is ready.` | First time: "Also for similar questions" | The second task reuses your choice without asking |
 | No question needed | `Write a Python to-do CLI that saves tasks to todo.json, with add, list, and done commands.` | — | No dialog; it just builds |
-| No UI | `pi -p -e ~/Documents/Ask_user_Pi_extension/src/index.ts -e ~/Documents/Ask_user_Pi_extension/scripts/cap-max-tokens.ts "Add a reminder that pings me after 30 minutes of work." < /dev/null` | — | `unavailable`; the reply says the decision is still open (keep the `< /dev/null`) |
-| Self-test, free | `/ask-user-test run_test 42` | — | A PASS/FAIL report in the chat; it doesn't reach the model |
-| Turn it off | `/ask-user off`, then the reminder prompt | — | No dialog; the agent decides on its own. `/ask-user on` brings it back. |
-
-To try the dialog itself without a model, load the dev-only
-[`scripts/try-ask-user.ts`](scripts/try-ask-user.ts) too and run
-`/ask-user-try [reminder|database|norec|invalid]`. It opens the real `ask_user`
-dialog with that example and shows the full result the agent would get (the
-text and the details); `invalid` shows the tool error instead, with no dialog.
-In print mode the result is printed to the terminal.
-
-```bash
-pi -e ~/Documents/Ask_user_Pi_extension/src/index.ts -e ~/Documents/Ask_user_Pi_extension/scripts/try-ask-user.ts
-```
+| Turned off | `/ask-user off`, then the reminder prompt | — | No dialog; it decides on its own |
 
 The model decides when to ask, so a prompt may occasionally not trigger a
 dialog. Type `/new` and try again.
 
-## How it was tested
+### 2. Run the automated tests
 
-Two layers answer different questions:
+Requires Node 24 (native TypeScript type stripping). Run from the project folder:
 
-- **Does the tool always return the right result?** The fake-dialog tests and
-  real Pi dialog tests below answer this without a model. Every run gives the
-  same answer.
-- **Does the model ask at the right times?** Only live runs can answer this,
-  and the model varies, so these results are observations, not proof.
+```bash
+npm install
+```
+
+**Free tests (no model).** Each exits 1 if anything fails.
+
+| Command | What it runs | Output |
+|---|---|---|
+| `npm test` | Unit tests with a fake dialog | Terminal |
+| `npm run typecheck` | `tsc --noEmit` against Pi's real types | Terminal |
+| `npm run test:batch` | Every scenario in [test/fake-test/batch.ts](test/fake-test/batch.ts) | [results.json](test/fake-test/batch-test/results.json) |
+| `npm run test:random -- --seed 42 --rounds 20` | Randomized self-test; the seed reproduces a run | [results.json](test/fake-test/random-test/results.json) |
+| `npm run test:real` | Real Pi, no model: dialogs over RPC, real keystrokes (needs `python3`), print mode, the on/off switch, `/ask-user-try`. Uses a temp settings folder, so your own on/off setting is never changed. | [results.json](test/real-test/real-dialogs/results.json) |
+
+**Live tests (spend model credit, results vary between runs).**
+
+| Command | What it runs | Output |
+|---|---|---|
+| `npm run test:live-check` | One prompt, answered against the recommendation | Terminal |
+| `npm run test:live-prompts` | 8 prompts: 5 should ask, 3 shouldn't | [results.json](test/real-test/live-prompts/results.json) |
+| `npm run test:live-answers` | Custom / Esc / empty answers (`-- --rescore <file>` rescores without Pi) | [results.json](test/real-test/live-answers/results.json) |
+| `npm run test:live-similar` | "Also for similar" vs. similar and very different prompts | [results.json](test/real-test/live-similar/results.json) |
+
+Live tests run each prompt in a fresh temp folder with only `ask_user`, `read`,
+`write`, and `edit` (no shell). They load two dev-only extensions from
+`scripts/`:
+- `sandbox-guard.ts` blocks file access outside the temp folder.
+- `cap-max-tokens.ts` lowers the requested output tokens, so a key with a low
+  spending limit isn't rejected.
+
+### 3. Results and coverage
 
 | Layer | What it proves | Latest result |
 |---|---|---|
@@ -153,20 +216,18 @@ Two layers answer different questions:
 | Batch report (fake dialog) | Every scenario from one file, with a JSON report | 63/63 |
 | Randomized self-test (fake dialog) | 30 scenario types per round with random inputs and user actions; expected results are worked out independently of the tool's code | 600/600 (20 rounds) |
 | Planted bugs | The tests catch real bugs | Every planted bug caught |
-| Real Pi, no model | Pi's actual dialogs over RPC, the on-screen dialog driven by real keystrokes, print mode, the on/off switch across Pi restarts (temp settings folder), and `/ask-user-try` | 27/27 (13 RPC, 7 keystrokes, 1 print, 4 on/off, 2 try); 0 messages reached the model |
+| Real Pi, no model | Pi's actual dialogs over RPC, the on-screen dialog driven by real keystrokes, print mode, the on/off switch across Pi restarts, and `/ask-user-try` | 27/27 (13 RPC, 7 keystrokes, 1 print, 4 on/off, 2 try); 0 messages reached the model |
 | Independent review | A reviewer who didn't write the code reproduced bugs with probes | 11 bugs reproduced and fixed |
 | Live: one prompt | End to end with a real model, answering against the recommendation | Passed |
-| Live: 8 prompts (5 should ask, 3 shouldn't) | When the model asks | 3/8 at first, 6/8 after tightening the guidelines (one run each) |
+| Live: 8 prompts | When the model asks | 3/8 at first, 6/8 after tightening the guidelines (one run each) |
 | Live: custom / Esc / empty | What the model does with each answer | Custom ✅; empty ✅; after Esc the tool correctly returned `cancelled`, but the model built its own recommended option ❌ |
-| Live: similar vs. very different prompts | Whether "Also for similar" is honored and stays in scope | Unrelated tasks still asked ✅; skipping similar ones is inconclusive; the model never said it applied the preference ❌ |
+| Live: similar vs. very different | Whether "Also for similar" is honored and stays in scope | Unrelated tasks still asked ✅; skipping similar ones is inconclusive; the model never said it applied the preference ❌ |
 
 Live runs use the model configured in Pi (here `openrouter/moonshotai/kimi-k2.6`).
 
-### What the tests cover
-
-✅ = tested there; — = not tested there. "Fake" covers the unit tests, the batch
-report and the randomized self-test. "Real Pi" is `npm run test:real`: Pi's own
-dialogs over RPC and/or real keystrokes, with no model. "Live" means a real model.
+**What the tests cover.** ✅ = tested there; — = not tested there. "Fake" covers
+the unit tests, the batch report and the randomized self-test. "Real Pi" is
+`npm run test:real`. "Live" means a real model.
 
 | Situation | Fake | Real Pi | Live |
 |---|---|---|---|
@@ -217,35 +278,6 @@ dialogs over RPC and/or real keystrokes, with no model. "Live" means a real mode
 
 Gaps: aborts, two simultaneous calls, and the model honoring "Also for
 similar" have no real-Pi or live coverage.
-
-## How to run the tests
-
-Requires Node 24 (native TypeScript type stripping).
-
-```bash
-npm install
-```
-
-| Command | What it runs | Cost |
-|---|---|---|
-| `npm test` | Unit tests, fake dialog | Free |
-| `npm run typecheck` | `tsc --noEmit` against Pi's real types | Free |
-| `npm run test:batch` | Every scenario in [test/fake-test/batch.ts](test/fake-test/batch.ts) → [results.json](test/fake-test/batch-test/results.json) | Free |
-| `npm run test:random -- --seed 42 --rounds 20` | Randomized self-test → [results.json](test/fake-test/random-test/results.json). The seed reproduces a run. | Free |
-| `npm run test:real` | Real Pi without a model: dialogs (RPC, keystrokes via `python3`, print mode), the on/off switch, `/ask-user-try` → [results.json](test/real-test/real-dialogs/results.json). Uses a temp settings folder, so your own on/off setting is never changed. | Free |
-| `npm run test:live-check` | One live prompt, answered against the recommendation | Model credit |
-| `npm run test:live-prompts` | The 8 ask / don't-ask prompts → [results.json](test/real-test/live-prompts/results.json) | Model credit |
-| `npm run test:live-answers` | Custom / Esc / empty answers → [results.json](test/real-test/live-answers/results.json). `-- --rescore <file>` rescores without Pi. | Model credit |
-| `npm run test:live-similar` | "Also for similar" vs. similar and very different prompts → [results.json](test/real-test/live-similar/results.json) | Model credit |
-
-Every free command exits 1 if anything fails.
-
-Live checks run each prompt in a fresh temp folder with only `ask_user`, `read`,
-`write`, and `edit` (no shell). They load two dev-only extensions from
-`scripts/`:
-- `sandbox-guard.ts` blocks file access outside the temp folder.
-- `cap-max-tokens.ts` lowers the requested output tokens, so a key with a low
-  spending limit isn't rejected.
 
 ## Project layout
 
