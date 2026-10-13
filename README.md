@@ -188,7 +188,7 @@ npm install
 |---|---|---|
 | `npm test` | Unit tests with a fake dialog | Terminal |
 | `npm run typecheck` | `tsc --noEmit` against Pi's real types | Terminal |
-| `npm run test:batch` | Every scenario in [test/fake-test/batch.ts](test/fake-test/batch.ts) | [results.json](test/fake-test/batch-test/results.json) |
+| `npm run test:batch` | Every scenario in [test/fake-test/batch.ts](test/fake-test/batch.ts). Prints each scenario's question, the choices shown, what the user did, and what came back; `-- --compact` prints one line per scenario. | [results.json](test/fake-test/batch-test/results.json) |
 | `npm run test:random -- --seed 42 --rounds 20` | Randomized self-test; the seed reproduces a run | [results.json](test/fake-test/random-test/results.json) |
 | `npm run test:real` | Real Pi, no model: dialogs over RPC, real keystrokes (needs `python3`), print mode, the on/off switch, `/ask-user-try`. Uses a temp settings folder, so your own on/off setting is never changed. | [results.json](test/real-test/real-dialogs/results.json) |
 
@@ -212,7 +212,7 @@ Live tests run each prompt in a fresh temp folder with only `ask_user`, `read`,
 
 | Layer | What it proves | Latest result |
 |---|---|---|
-| Unit tests (fake dialog) | Each behavior, checked exactly | 196/196 |
+| Unit tests (fake dialog) | Each behavior, checked exactly | 210/210 |
 | Batch report (fake dialog) | Every scenario from one file, with a JSON report | 63/63 |
 | Randomized self-test (fake dialog) | 30 scenario types per round with random inputs and user actions; expected results are worked out independently of the tool's code | 600/600 (20 rounds) |
 | Planted bugs | The tests catch real bugs | Every planted bug caught |

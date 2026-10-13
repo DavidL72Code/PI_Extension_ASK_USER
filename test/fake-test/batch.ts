@@ -2,11 +2,17 @@
 // real registered tool (fake pi + fake dialogs from ./helpers.ts; no Pi process,
 // no model) and writes test/fake-test/batch-test/results.json.
 //
-// Run: npm run test:batch   (exits 1 if any scenario fails)
+// Prints one block per scenario: the question, the choices shown, what the
+// simulated user did, and what came back (./batch-format.ts). --compact prints
+// one line per scenario instead.
+//
+// Run: npm run test:batch [-- --compact]   (exits 1 if any scenario fails, 2 on bad arguments)
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { isDeepStrictEqual } from "node:util";
+import type { AgentToolResult } from "@earendil-works/pi-coding-agent";
 import { createAskUserTool } from "../../src/index.ts";
+import { formatReport, type EarlierView, type FollowUp, type ScenarioView, type UserAction } from "./batch-format.ts";
 import {
 	QUESTION,
 	REASON,
@@ -20,7 +26,18 @@ import {
 	session,
 	withoutRecommendation,
 	type Responder,
+	type Session,
 } from "./helpers.ts";
+
+const USAGE = "usage: npm run test:batch -- [--compact]";
+const args = process.argv.slice(2);
+for (const arg of args) {
+	if (arg !== "--compact") {
+		console.error(`unknown argument ${JSON.stringify(arg)} (${USAGE})`);
+		process.exit(2);
+	}
+}
+const compact = args.includes("--compact");
 
 // ---------------------------------------------------------------------------
 // Scenario types
@@ -29,21 +46,8 @@ import {
 type Category = "answered" | "cancelled" | "unavailable" | "invalid" | "unexpected" | "display" | "repeat" | "scope";
 /** "scope" is the rule 16 follow-up select after a new answer. */
 type Method = "select" | "input" | "scope";
-/** How the simulated human answers the rule 16 follow-up (default "once": Enter on "Just this time"). */
-type FollowUp = "once" | "similar" | "esc" | "unexpected" | "abort";
-
-/** What the simulated human (or client) does. Choice numbers are the 1-based numbers shown in the menu. */
-type UserAction =
-	| { kind: "pick"; choice: number }
-	| { kind: "type"; text: string }
-	| { kind: "escMenu" }
-	| { kind: "escTextBox" }
-	| { kind: "abortBefore" }
-	| { kind: "abortInMenu" }
-	| { kind: "abortInTextBox" }
-	| { kind: "menuReturns"; value: string }
-	| { kind: "noUI" }
-	| { kind: "none" };
+// FollowUp (how the simulated human answers the follow-up) and UserAction (what
+// the simulated human or client does) live in ./batch-format.ts, which describes them.
 
 interface Expected {
 	status?: "answered" | "cancelled" | "unavailable";
@@ -850,13 +854,27 @@ function fakeBranch(prefix: string) {
 	};
 }
 
-async function runScenario(scenario: Scenario, index: number) {
+/** Every dialog in order, as recorded in results.json ("scope" is the follow-up). */
+const shownDialogs = (log: Session["log"]) =>
+	log.map((call) =>
+		call.kind === "scope"
+			? { method: "scope", title: call.title, choices: call.choices }
+			: call.method === "select"
+				? { method: call.method, title: call.title, choices: call.choices }
+				: { method: call.method, title: call.title, placeholder: call.placeholder },
+	);
+
+const outcomeOf = (result: AgentToolResult<any>) => ({ status: result.details.status, details: result.details, firstLine: contentText(result).split("\n")[0] });
+
+/** Runs one scenario: `record` goes to results.json, `view` to the console. */
+async function runScenario(scenario: Scenario, index: number): Promise<{ record: Record<string, unknown>; view: ScenarioView }> {
 	const controller = new AbortController();
 	const action = scenario.user;
 	const fake = session(responders(action, controller, scenario.followUp));
 
 	// History scenarios use a fresh tool instance and a fake session branch.
 	let execute = run;
+	let earlier: EarlierView | undefined;
 	if (scenario.history) {
 		const tool = createAskUserTool();
 		const branch = fakeBranch(`batch-${index}`);
@@ -869,6 +887,15 @@ async function runScenario(scenario: Scenario, index: number) {
 		withBranch(priorSession);
 		const priorResult = await tool.execute("prior", prior.input as never, priorController.signal, undefined, priorSession.ctx);
 		if (prior.save) branch.result("prior", priorResult.details);
+		earlier = {
+			input: prior.input,
+			user: prior.user,
+			followUp: prior.followUp,
+			dialogs: shownDialogs(priorSession.log),
+			outcome: outcomeOf(priorResult),
+			sameMessage: prior.sameMessage,
+			saved: prior.save,
+		};
 		if (!prior.sameMessage) {
 			branch.userTurn();
 			branch.message("assistant-2", [["call", scenario.input]]);
@@ -879,22 +906,15 @@ async function runScenario(scenario: Scenario, index: number) {
 
 	let actual: Record<string, unknown>;
 	try {
-		const result = await execute(scenario.input, fake, controller.signal);
-		actual = { status: result.details.status, details: result.details, firstLine: contentText(result).split("\n")[0] };
+		actual = outcomeOf(await execute(scenario.input, fake, controller.signal));
 	} catch (error) {
 		actual = { error: error instanceof Error ? error.message : String(error) };
 	}
 
-	const dialogCalls = fake.log.map((call) =>
-		call.kind === "scope"
-			? { method: "scope", title: call.title, choices: call.choices }
-			: call.method === "select"
-				? { method: call.method, title: call.title, choices: call.choices }
-				: { method: call.method, title: call.title, placeholder: call.placeholder },
-	);
-
+	const dialogCalls = shownDialogs(fake.log);
 	const mismatches = compare(scenario.expected, actual, dialogCalls);
-	return {
+	const pass = mismatches.length === 0;
+	const record = {
 		name: scenario.name,
 		category: scenario.category,
 		input: scenario.input,
@@ -903,9 +923,18 @@ async function runScenario(scenario: Scenario, index: number) {
 		dialogCalls,
 		expected: scenario.expected,
 		actual,
-		pass: mismatches.length === 0,
+		pass,
 		mismatches,
 	};
+	const view: ScenarioView = {
+		name: scenario.name,
+		category: scenario.category,
+		pass,
+		mismatches,
+		call: { input: scenario.input, user: action, followUp: scenario.followUp, dialogs: dialogCalls, outcome: actual },
+		...(earlier ? { earlier } : {}),
+	};
+	return { record, view };
 }
 
 function describeHistory({ prior }: NonNullable<Scenario["history"]>) {
@@ -952,10 +981,15 @@ function compare(expected: Expected, actual: Record<string, unknown>, dialogCall
 	return problems;
 }
 
-const results = [];
-for (const [index, scenario] of scenarios.entries()) results.push(await runScenario(scenario, index));
+const results: Record<string, unknown>[] = [];
+const views: ScenarioView[] = [];
+for (const [index, scenario] of scenarios.entries()) {
+	const { record, view } = await runScenario(scenario, index);
+	results.push(record);
+	views.push(view);
+}
 
-const passed = results.filter((r) => r.pass).length;
+const passed = views.filter((v) => v.pass).length;
 const piPackage = JSON.parse(
 	readFileSync(new URL("../../node_modules/@earendil-works/pi-coding-agent/package.json", import.meta.url), "utf8"),
 );
@@ -973,11 +1007,7 @@ mkdirSync(outDir, { recursive: true });
 const outFile = new URL("results.json", outDir);
 writeFileSync(outFile, `${JSON.stringify(report, null, 2)}\n`);
 
-const width = Math.max(...results.map((r) => r.category.length));
-for (const r of results) {
-	console.log(`${r.pass ? "PASS" : "FAIL"}  ${r.category.padEnd(width)}  ${r.name}`);
-	for (const problem of r.mismatches) console.log(`      - ${problem}`);
-}
+for (const text of formatReport(views, compact)) console.log(text);
 console.log(`\n${passed}/${results.length} scenarios passed, ${results.length - passed} failed`);
 console.log(`Wrote ${outFile.pathname}`);
 process.exitCode = passed === results.length ? 0 : 1;
