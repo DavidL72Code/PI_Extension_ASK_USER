@@ -162,6 +162,62 @@ Two layers answer different questions:
 
 Live runs use the model configured in Pi (here `openrouter/moonshotai/kimi-k2.6`).
 
+### What the tests cover
+
+✅ = tested there; — = not tested there. "Fake" covers the unit tests, the batch
+report and the randomized self-test. "Real Pi" is `npm run test:real`: Pi's own
+dialogs over RPC and/or real keystrokes, with no model. "Live" means a real model.
+
+| Situation | Fake | Real Pi | Live |
+|---|---|---|---|
+| **Answers** | | | |
+| Pick the recommended option | ✅ | ✅ RPC + keys | ✅ |
+| Pick against the recommendation (the result says so) | ✅ | ✅ RPC | ✅ |
+| No recommendation (nothing marked) | ✅ | — | — |
+| Custom answer kept exactly (spaces, unicode) | ✅ | ✅ RPC + keys | ✅ |
+| Custom text equal to the recommended label stays custom | ✅ | — | — |
+| Recommendation given in another case is matched | ✅ | — | — |
+| **"Also for similar" follow-up** | | | |
+| "Just this time" / "Also for similar" | ✅ | ✅ RPC + keys | ✅ |
+| Esc, an unexpected value, or an abort on the follow-up keeps the answer | ✅ | ✅ Esc (RPC + keys) | — |
+| A long custom answer is shortened in the follow-up title only | ✅ | — | — |
+| **Cancel, empty, abort** | | | |
+| Esc on the menu | ✅ | ✅ RPC + keys | Tool ✅; the model then built its recommendation ❌ |
+| Esc on the text box | ✅ | ✅ RPC + keys | — |
+| Empty, whitespace-only, or ideographic-space answer | ✅ | ✅ RPC + keys | ✅ (empty) |
+| Run aborted before / during the menu / during the text box | ✅ | — | — |
+| **No UI** | | | |
+| Print or JSON mode → `unavailable`, no dialog | ✅ | ✅ print | ✅ |
+| **Bad calls (rejected, no dialog opens)** | | | |
+| 1 or 4 options | ✅ | ✅ (1 option) | — |
+| Duplicate labels (case or spacing differences) | ✅ | — | — |
+| Recommendation that matches no label, or is empty | ✅ | — | — |
+| Unknown or misplaced fields | ✅ | — | ✅ (the model fixed its call) |
+| `[Recommended]` anywhere in a label | ✅ | — | — |
+| Line breaks in a label or tradeoff | ✅ | — | — |
+| Label equal to "Write my own answer" | ✅ | — | — |
+| Invalid input with no UI is still rejected | ✅ | — | — |
+| **Display** | | | |
+| Exact layout: title, tradeoffs, numbered choices, `[Recommended]` | ✅ | ✅ RPC payload + screen | ✅ |
+| Line breaks in the question or reason are flattened | ✅ | — | — |
+| A dialog value that isn't a displayed choice is never an answer | ✅ | ✅ RPC | — |
+| **Repeats** | | | |
+| Identical call in a later turn asks again | ✅ | ✅ RPC | — |
+| Same question text for a different decision asks | ✅ | — | — |
+| Identical calls in one response → one dialog | ✅ (incl. Pi's real `SessionManager`) | — | — |
+| A sibling call aborted before it asked doesn't count | ✅ | — | — |
+| **On/off switch** | | | |
+| `off` / `on` / `status`, and the `/ask_user` alias | ✅ | ✅ | — |
+| The setting survives a Pi restart | ✅ | ✅ | — |
+| Default on; a corrupt settings file → on plus a warning | ✅ | ✅ | — |
+| Pi started with `--tools` excluding the tool | ✅ | ✅ | — |
+| **When the agent asks** | | | |
+| Unresolved, material choice → asks | — | — | 3 of 5 prompts in run 2 |
+| Fully specified, delegated, or routine → doesn't ask | — | — | 3 of 3 prompts in run 2 |
+
+Gaps: aborts, two simultaneous calls, and the model honoring "Also for
+similar" have no real-Pi or live coverage.
+
 ## How to run the tests
 
 Requires Node 24 (native TypeScript type stripping).
